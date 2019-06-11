@@ -3,7 +3,6 @@ macro "Pomegranate Batch Re-Measure"
 	close('*');
 	roiManager("Reset");
 	run("Clear Results");
-	run("Monitor Memory...");	
 	run("Set Measurements...", "area mean standard modal min centroid center perimeter median stack display redirect=None decimal=3");
 	
 	waitForUser("Please Select an output Directory");
