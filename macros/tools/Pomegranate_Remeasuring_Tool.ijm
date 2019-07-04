@@ -1,70 +1,37 @@
-macro "Pomegranate Batch Re-Measure"
+macro "Pomegranate Remeasure"
 {
 	close('*');
 	roiManager("Reset");
 	run("Clear Results");
 	run("Set Measurements...", "area mean standard modal min centroid center perimeter median stack display redirect=None decimal=3");
 	
-	waitForUser("Please Select an output Directory");
-	output = getDirectory("Choose Output Directory");
-
-	loop = true;
-	while(loop)
+	
+	// Measure Intensity
+	showStatus("Pomegranate - Measuring Whole Cell ROIs");
+	
+	selectImage(msChannel);
+	print("\n[Bit-Depth Checkpoint C]");
+	print("Current Bit-Depth: " + bitDepth() + "-bit");
+	
+	roiManager("Deselect");
+	roiManager("Show All Without Labels");
+	roiManager("Measure");
+	
+	// Append Additional Info to Output
+	n = roiManager("Count");
+	for (i = 0; i < n; i++)
 	{
-		close('*');
-		roiManager("Reset");
-		run("Clear Results");
-		
-		// Open Image
-		waitForUser("Please Select an Input Image");
-		imagePath = File.openDialog("Choose an Input File"); 
-	
-		setBatchMode(true);
-		run("Bio-Formats Importer", "open=" + imagePath + " autoscale color_mode=Composite view=Hyperstack stack_order=XYCZT");
-		getDimensions(width, height, channels, slices, frames);
-		getVoxelSize(vx, vy, vz, unit);
-		channelList = newArray(channels);
-		for (i = 1; i <= channels; i++) channelList[i-1] = "" + i;
-	
-		// Designate Channel
-		Dialog.create("Channel Selection");
-			Dialog.addChoice("Measurement Channel", channelList);
-		Dialog.show();	
-		msN = parseInt(Dialog.getChoice());
-
-		// Deconvolution Crop
-		Dialog.create("Deconvolution Crop");
-			Dialog.addNumber("Width", 960);
-			Dialog.addNumber("Height", 960);
-		Dialog.show();	
-
-		trimx = width - Dialog.getNumber();
-		trimy = height - Dialog.getNumber();
-
-		makeRectangle(trimx/2, trimy/2, width - trimx, height - trimy);
-		run("Crop");
-	
-		// Isolate Channel
-		imageName = getTitle();
-		run("Split Channels");	
-		msChannel = "C"+msN+"-"+imageName;
-		selectImage(msChannel);
-		close("\\Others");
-		setBatchMode(false);
-
-		setSlice(round(nSlices/2));
-
-		// ROI Loading
-		waitForUser("Please Select ROI File");
-		roi = File.openDialog("Choose an Input File"); 
-		roiManager("Open", roi);
-		roiManager("Measure");
-		roiManager("Show All Without Labels");
-		
-		// Results Export
-		resultFile = output + replace(File.getName(imagePath),'.','_') + "_Results.csv";
-		if (!File.exists(resultFile)) saveAs("Results", resultFile);
-
-		loop = getBoolean("Process Another Image?");
+		roiManager("Select", i);
+		ID = Roi.getProperty("Object_ID");
+		dType = Roi.getProperty("Data_Type");
+		mid = Roi.getProperty("Mid_Slice");
+			
+		setResult("Object_ID", i, ID);
+		if (mid) setResult("ROI_Type", i, "MID");
+		else setResult("ROI_Type", i, "NONMID");
+			
+		setResult("Data_Type", i, dType);
+		setResult("Image", i, imageName);
+		setResult("Experiment", i, expName);
 	}
 }
