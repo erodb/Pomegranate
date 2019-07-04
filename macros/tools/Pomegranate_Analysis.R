@@ -2,19 +2,32 @@ library(tidyverse) # install.packages("tidyverse")
 library(ggpubr) # install.packages("ggpubr")
 
 voxelSizeZ <- 0.05633 # microns/voxel
+dZ_Tolerance <- 10 # Number of slices away from midplane to use for analysis
 
-nuclearResults <- read.csv(file.choose(), header = TRUE)
-wholecellResults <- read.csv(file.choose(), header = TRUE)
+# Filtering Unpaired Data
+data.Combined <- read.csv(file.choose(), header = TRUE) %>%
+  mutate(Integrated_Density = Mean * Area,
+         Object_ID = as.character(Object_ID)) %>%
+  group_by(Object_ID) %>%
+  filter(length(unique(Data_Type)) == 2)
 
-combinedResults <- rbind(nuclearResults, wholecellResults)
-summaryResults <- combinedResults %>%
-  mutate(Integrated_Density = Mean * Area) %>%
-  group_by(Object_ID, Data_Type) %>% 
+# Calculate Distance from MidSlice
+data.Mid <- filter(data.Combined[,c("Object_ID","Data_Type","ROI_Type","Slice")], 
+                   ROI_Type == "MID")[,c("Object_ID","Data_Type","Slice")] %>% 
+  rename(Mid_Slice = Slice)
+data.Combined <- merge(data.Combined, data.Mid) %>% 
+  mutate(dZ_Slice = Mid_Slice - Slice)
+
+# Restrict to Measurement Window
+data.Combined <- filter(data.Combined, abs(dZ_Slice) <= dZ_Tolerance)
+
+data.Summary <- data.Combined %>%
+  group_by(Object_ID, Data_Type) %>%
   summarise(Volume_microns3 = sum(Area * voxelSizeZ),
             Vol_Integrated_Density = sum(Integrated_Density),
             Intensity_per_Vol = sum(Integrated_Density)/Volume_microns3)
 
-A <- ggplot(data = summaryResults) +
+plot.A <- ggplot(data = data.Summary) +
         geom_point(aes(x = Vol_Integrated_Density, 
                        y = Volume_microns3, 
                        color = Data_Type)) +
@@ -24,7 +37,7 @@ A <- ggplot(data = summaryResults) +
         scale_color_manual(values = c("red", "black")) +
         theme_bw()
 
-B <- ggplot(data = summaryResults) +
+plot.B <- ggplot(data = data.Summary) +
         geom_point(aes(x = Data_Type, y = Intensity_per_Vol),
                    size = 2) +
         geom_line(aes(x = Data_Type, y = Intensity_per_Vol, group = Object_ID),
@@ -34,13 +47,13 @@ B <- ggplot(data = summaryResults) +
         theme_bw()
 
 # Volume Histogram
-C <- ggplot() +
-        geom_histogram(data = filter(summaryResults, Data_Type == "Whole_Cell"),
+plot.C <- ggplot() +
+        geom_histogram(data = filter(data.Summary, Data_Type == "Whole_Cell"),
                        aes(x = Volume_microns3, y = ..count.., fill = "Whole Cell"),
                        alpha = 0.5,
                        color = "black",
                        bins = 50) +
-        geom_histogram(data = filter(summaryResults, Data_Type == "Nucleus"),
+        geom_histogram(data = filter(data.Summary, Data_Type == "Nucleus"),
                        aes(x = Volume_microns3, y = ..count.., fill = "Nucleus"),
                        alpha = 0.5,
                        color = "black",
@@ -52,13 +65,13 @@ C <- ggplot() +
         theme_bw()
 
 # Intensity Histogram
-D <- ggplot() +
-        geom_histogram(data = filter(summaryResults, Data_Type == "Whole_Cell"),
+plot.D <- ggplot() +
+        geom_histogram(data = filter(data.Summary, Data_Type == "Whole_Cell"),
                        aes(x = Intensity_per_Vol, y = ..count.., fill = "Whole Cell"),
                        alpha = 0.5,
                        color = "black",
                        bins = 50) +
-        geom_histogram(data = filter(summaryResults, Data_Type == "Nucleus"),
+        geom_histogram(data = filter(data.Summary, Data_Type == "Nucleus"),
                        aes(x = Intensity_per_Vol, y = ..count.., fill = "Nucleus"),
                        alpha = 0.5,
                        color = "black",
@@ -69,5 +82,5 @@ D <- ggplot() +
         scale_fill_manual(values = c("red", "black")) +
         theme_bw()
 
-ggarrange(A,B, ncol = 2)
-ggarrange(C,D, ncol = 2)
+ggarrange(plot.A, plot.B, ncol = 2)
+ggarrange(plot.C, plot.D, ncol = 2)
