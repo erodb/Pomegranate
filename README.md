@@ -5,16 +5,16 @@ A segmentation and reconstruction pipeline that uses a combination of bright-fie
 * [Version History](#version-history)
 * [Contact Information](#contact-information)
 
-### Publication Links
-The associated publication for this software can be found on [PLOS One](#publication-links) and [bioRxiv](#publication-links)
+## Publication Links
+The associated publication for this software can be found on [PLOS One](#publication-links) and [bioRxiv](#publication-links).
 
-### Contact Information
+## Contact Information
 * Erod Keaton Baybay (erodb@vt.edu)
 
-### Version History
-#### Version 1.0
+## Version History
+##### Version 1.0
 * Original release of Pomegranate
 
-#### Version 1.0b
+##### Version 1.0b
 * Added drop down menu for various hole filling algorithms (Shape-based, Regular, or None)
 * Added an optional manual exclusion phase during whole-cell segmentation's filtering and smoothing
