@@ -24,3 +24,6 @@ The associated publication for this software can be found on [PLOS One](#publica
 **Version 1.0b** 
 * Added drop down menu for various hole filling algorithms (Shape-based, Regular, or None)
 * Added an optional manual exclusion phase during whole-cell segmentation's filtering and smoothing
+
+**Version 1.0c** 
+* Replaced the equation for nuclear stability score to a simpler algorithm.
