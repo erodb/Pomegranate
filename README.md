@@ -2,8 +2,11 @@
 A segmentation and reconstruction pipeline that uses a combination of bright-field images, fluorescent markers, and the known morphological characteristics of fission yeast to produce a volumetric fit of a cell’s whole cell and nuclear geometry.
 
 ### Table of Contents
-* [Contact Information](#contact-information)
 * [Version History](#version-history)
+* [Contact Information](#contact-information)
+
+## Publication Links
+The associated publication for this software can be found on [PLOS One](#publication-links) and [bioRxiv](#publication-links)
 
 ## Contact Information
 * Erod Keaton Baybay (erodb@vt.edu)
