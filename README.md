@@ -5,7 +5,7 @@ A segmentation and reconstruction pipeline that uses a combination of bright-fie
 * [Version History](#version-history)
 * [Contact Information](#contact-information)
 
----
+
 
 ## Version History
 **Version 1.0** 
@@ -14,6 +14,7 @@ A segmentation and reconstruction pipeline that uses a combination of bright-fie
 **Version 1.0b**
 * Added drop down menu for various hole filling algorithms (Shape-based, Regular, or None)
 * Added an optional manual exclusion phase during whole-cell segmentation's filtering and smoothing
+
 
 
 ## Contact Information
