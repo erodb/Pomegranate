@@ -2,10 +2,10 @@
 A segmentation and reconstruction pipeline that uses a combination of bright-field images, fluorescent markers, and the known morphological characteristics of fission yeast to produce a volumetric fit of a cell’s whole cell and nuclear geometry.
 
 ### Table of Contents
-* (Version History)[#vhist]
-* (Contact)[#contact]
+* (Version History)[#version-history]
+* (Contact)[#contact-information]
 
-<a name="vhist"></a>
+
 ### Version History
 **Version 1.0** 
 * Original release of Pomegranate
@@ -15,6 +15,5 @@ A segmentation and reconstruction pipeline that uses a combination of bright-fie
 * Added an optional manual exclusion phase during whole-cell segmentation's filtering and smoothing
 
 
-<a name="contact"></a>
 ### Contact Information
 * Erod Keaton Baybay (erodb@vt.edu)
