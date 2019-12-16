@@ -12,9 +12,9 @@ The associated publication for this software can be found on [PLOS One](#publica
 * Erod Keaton Baybay (erodb@vt.edu)
 
 ## Version History
-##### Version 1.0
+#### Version 1.0
 * Original release of Pomegranate
 
-##### Version 1.0b
+#### Version 1.0b
 * Added drop down menu for various hole filling algorithms (Shape-based, Regular, or None)
 * Added an optional manual exclusion phase during whole-cell segmentation's filtering and smoothing
