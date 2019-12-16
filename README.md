@@ -5,8 +5,9 @@ A segmentation and reconstruction pipeline that uses a combination of bright-fie
 * [Version History](#version-history)
 * [Contact Information](#contact-information)
 
+---
 
-### Version History
+## Version History
 **Version 1.0** 
 * Original release of Pomegranate
 
@@ -15,5 +16,5 @@ A segmentation and reconstruction pipeline that uses a combination of bright-fie
 * Added an optional manual exclusion phase during whole-cell segmentation's filtering and smoothing
 
 
-### Contact Information
+## Contact Information
 * Erod Keaton Baybay (erodb@vt.edu)
