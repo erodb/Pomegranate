@@ -26,4 +26,5 @@ The associated publication for this software can be found on [PLOS One](#publica
 * Added an optional manual exclusion phase during whole-cell segmentation's filtering and smoothing
 
 **Version 1.0c** 
-* Replaced the equation for nuclear stability score to a simpler algorithm.
+* Replaced the equation for nuclear stability score to a simpler algorithm (cohesion radius).
+  * The cohesion radius describes the smallest circle that can contain all centroids - centered at the mean position of the centroids.
