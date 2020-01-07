@@ -19,7 +19,7 @@ The associated publication for this software can be found on [PLOS One](#publica
 
 ## Version History
 **Version 1.0** 
-* Original release of Pomegranate
+* Original internal release of Pomegranate
 
 **Version 1.0b** 
 * Added drop down menu for various hole filling algorithms (Shape-based, Regular, or None)
