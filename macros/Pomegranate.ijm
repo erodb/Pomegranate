@@ -10,8 +10,8 @@
 
 macro "Pomegranate"
 { 		 
-	versionFIJI = "1.52q";
-	versionPIPELINE = "1.0c";
+	versionFIJI = "1.52s";
+	versionPIPELINE = "1.2";
 
 	requires(versionFIJI);
 
@@ -45,18 +45,22 @@ macro "Pomegranate"
 	run("Set Measurements...", "area mean standard modal min centroid center perimeter fit shape feret's median stack limit display redirect=None decimal=3");
 
 	// Designate Run Mode
-	print("\n[Run Mode]");
-	
-	runModeList = newArray("Both Nuclear and Whole Cell Segmentation", "Nuclear Segmentation Only", "Whole Cell Segmentation Only");
+	print("\n[Run Mode]");	
+	runModeList = newArray("Both Nuclear and Whole Cell Analysis", "Nuclear Analysis Only", "Whole Cell Analysis Only");
 	transpMode = false;
+	segMode = false;
 	Dialog.create("Pomegranate Run Parameters");
 		Dialog.addChoice("Analysis Type", runModeList);
+		Dialog.addCheckbox("Segmentation Only", segMode);
 		Dialog.addCheckbox("Transparent Mode", transpMode);
 	Dialog.show()
 	runMode = Dialog.getChoice();
+	segMode = Dialog.getCheckbox();
 	transpMode = Dialog.getCheckbox();
 	
 	print("Analysis Type: " + runMode);
+	if (segMode) print("Segmentation Only: Enabled");
+	else print("Segmentation Only: Disabled");
 	if (transpMode) print("Transparent Mode: Enabled");
 	else print("Transparent Mode: Disabled");
 	
@@ -102,26 +106,15 @@ macro "Pomegranate"
 		print("Save ID: " + runID);
 		print("Generic Run ID: " + runID);
 		
-		// Output Directory
-		directoryMain = outputPath+saveID+"/";
-		if (!File.exists(directoryMain)) File.makeDirectory(directoryMain);
-
-			// ROI Directory
-			directoryROI = directoryMain + "ROIs/";
-			if (!File.exists(directoryROI)) File.makeDirectory(directoryROI);
-
-			// Results Directory
-			directoryResults = directoryMain + "Results/";
-			if (!File.exists(directoryResults)) File.makeDirectory(directoryResults);
-
-			// Binary Directory
-			directoryBinary = directoryMain + "Binaries/";
-			if (!File.exists(directoryBinary)) File.makeDirectory(directoryBinary);
-		
 		run("Bio-Formats Importer", "open=" + imagePath + " autoscale color_mode=Composite view=Hyperstack stack_order=XYCZT");
-		
+
 		if (isOpen(imageName)) step++; // * * *
-		else showMessageWithCancel("Pomegranate Error", "Error: Unable to Open Image");
+		else 
+		{
+			showMessageWithCancel("Pomegranate Error", "Error: Unable to Open Image\nResponse: Ending Analysis");
+			cleanAll();
+			exit();
+		}
 		
 		run("Options...", "iterations=1 count=1 black do=Nothing");
 	}
@@ -134,47 +127,97 @@ macro "Pomegranate"
 	getVoxelSize(vx, vy, vz, unit);
 	print("Original Size: " + vx + " " + unit + ", " + vy + " " + unit + ", " + vz + " " + unit);
 
-	channelList = newArray(channels);
-	for (i = 1; i <= channels; i++) channelList[i-1] = "" + i;
-
-	// Assign Channels
-	while (step == 1)
+	if (channels > 1)
 	{
-		Dialog.create("Channel Selection");
-			Dialog.addChoice("Measurement Channel", channelList, channelList[0]);
-			if (runMode != "WLCL") Dialog.addChoice("Nuclear Marker Channel", channelList, channelList[1]);
-			if (runMode != "NUCL") Dialog.addChoice("Bright-Field Channel", channelList, channelList[2]);
-		Dialog.show();	
-		msChannel = parseInt(Dialog.getChoice()); // Measurement Channel
-		if (runMode != "WLCL") nmChannel = parseInt(Dialog.getChoice()); // Nuclear Marker Channel
-		if (runMode != "NUCL") bfChannel = parseInt(Dialog.getChoice()); // Bright-Field Channel
+		channelList = newArray(channels);
+		for (i = 1; i <= channels; i++) channelList[i-1] = "" + i;
+	
+		// Assign Channels
+		while (step == 1)
+		{
+			Dialog.create("Channel Selection");
+				if (!segMode) Dialog.addChoice("Measurement Channel", channelList, 1);
+				if (runMode != "WLCL") Dialog.addChoice("Nuclear Marker Channel", channelList, 1);
+				if (runMode != "NUCL") Dialog.addChoice("Bright-Field Channel", channelList, 1);
+			Dialog.show();	
+			if (!segMode) msChannel = parseInt(Dialog.getChoice()); // Measurement Channel
+			if (runMode != "WLCL") nmChannel = parseInt(Dialog.getChoice()); // Nuclear Marker Channel
+			if (runMode != "NUCL") bfChannel = parseInt(Dialog.getChoice()); // Bright-Field Channel
+	
+			print("\n[Run Parameters]");
+			if (!segMode) print("Measurement Channel: " + msChannel);
+			if (runMode != "WLCL") print("Nuclear Marker Channel: " + nmChannel);
+			if (runMode != "NUCL") print("Bright-Field Channel: " + bfChannel);
+	
+			// Defaulting Omitted Variables
+			if (segMode) msChannel = -1;
+			if (runMode == "WLCL") nmChannel = -2;
+			if (runMode == "NUCL") bfChannel = -3;
 
-		print("\n[Run Parameters]");
-		print("Measurement Channel: " + msChannel);
-		if (runMode != "WLCL") print("Nuclear Marker Channel: " + nmChannel);
-		if (runMode != "NUCL") print("Bright-Field Channel: " + bfChannel);
-
-		// Defaulting Omitted Variables
-		if (runMode == "WLCL") nmChannel = -2;
-		if (runMode == "NUCL") bfChannel = -3;
-		
-		if ((nmChannel != bfChannel) && (msChannel != bfChannel) && (nmChannel != msChannel)) step++; // * * *
-		else showMessageWithCancel("Pomegranate Error", "Error: Invalid Channels");
+			// Only Generate Folders for Valid Inputs
+			if ((nmChannel != bfChannel) && (msChannel != bfChannel) && (nmChannel != msChannel)) step++; // * * *
+			else showMessageWithCancel("Pomegranate Error", "Error: Invalid Channel Selection\nResponse: Returning to Channel Selection");
+		}
 	}
+	else if ((channels < 2) && (runMode == "BOTH")) 
+	{
+		showMessageWithCancel("Pomegranate Error", "Error: Insufficient Channels for Analysis\nResponse: Ending Analysis");
+		cleanAll();
+		exit();
+	}
+	else if ((channels < 2) && (!segMode)) 
+	{
+		showMessageWithCancel("Pomegranate Error", "Error: Insufficient Channels for Analysis\nResponse: Ending Analysis");
+		cleanAll();
+		exit();
+	}
+	else step++; // * * *
+
 
 // [ 2 ] -----------------------------------------------------------------------------------------------------------------------------------------------
-	showStatus("Pomegranate - Nuclear Segmentation [Otsu]");
-	print("\n[Bit-Depth Checkpoint A]");
-	print("Current Bit-Depth: " + bitDepth() + "-bit");
 	
-	run("Split Channels");	
-	msChannel = "C"+msChannel+"-"+imageName;
-	if (runMode != "WLCL") nmChannel = "C"+nmChannel+"-"+imageName;
-	if (runMode != "NUCL") bfChannel = "C"+bfChannel+"-"+imageName;
+	// Output Directory
+	directoryMain = outputPath + saveID+"/";
+	if (!File.exists(directoryMain)) File.makeDirectory(directoryMain);
+		
+		// ROI Directory
+		directoryROI = directoryMain + "ROIs/";
+		if (!File.exists(directoryROI)) File.makeDirectory(directoryROI);
+		
+		// Results Directory
+		directoryResults = directoryMain + "Results/";
+		if (!File.exists(directoryResults)) File.makeDirectory(directoryResults);
+		
+		// Binary Directory
+		directoryBinary = directoryMain + "Binaries/";
+		if (!File.exists(directoryBinary)) File.makeDirectory(directoryBinary);
 
-	selectImage(msChannel);
-	print("\n[Bit-Depth Checkpoint B]");
-	print("Current Bit-Depth: " + bitDepth() + "-bit");
+	if (!segMode)
+	{
+		showStatus("Pomegranate - Nuclear Segmentation [Otsu]");
+		print("\n[Bit-Depth Checkpoint A]");
+		print("Current Bit-Depth: " + bitDepth() + "-bit");
+	}
+	
+	if (channels > 1)
+	{
+		run("Split Channels");	
+		if (!segMode) msChannel = "C"+msChannel+"-"+imageName;
+		if (runMode != "WLCL") nmChannel = "C"+nmChannel+"-"+imageName;
+		if (runMode != "NUCL") bfChannel = "C"+bfChannel+"-"+imageName;
+	}
+	else
+	{
+		if (runMode != "WLCL") nmChannel = imageName;
+		if (runMode != "NUCL") bfChannel = imageName;
+	}
+
+	if (!segMode)
+	{
+		selectImage(msChannel);
+		print("\n[Bit-Depth Checkpoint B]");
+		print("Current Bit-Depth: " + bitDepth() + "-bit");
+	}
 
 	if (runMode != "WLCL")
 	{
@@ -226,8 +269,8 @@ macro "Pomegranate"
 		while (step == 3)
 		{
 			// Nuclear ROI Run Parameters
-			searchRadiusThresh = 15 * vx;
-			cohesionRadiusThresh = 15 * vx;
+			searchRadiusThresh = 2.0;
+			cohesionRadiusThresh = 3.0;
 			en = 0.2;
 			mroi = 5;
 			Dialog.create("Nuclei Building Parameters");
@@ -236,8 +279,8 @@ macro "Pomegranate"
 				Dialog.addNumber("Enlarge Parameter (" + unit + ")", en);
 				Dialog.addNumber("Minimum ROIs per Nuclei", mroi);
 			Dialog.show();
-			searchRadiusThresh = Dialog.getNumber / vx;
-			cohesionRadiusThresh = Dialog.getNumber / vx;
+			searchRadiusThresh = Dialog.getNumber;
+			cohesionRadiusThresh = Dialog.getNumber;
 			en = Dialog.getNumber;
 			mroi = Dialog.getNumber;
 	
@@ -250,8 +293,8 @@ macro "Pomegranate"
 			print("Enlarge Parameter (" + unit + "): " + en);
 			print("Minimum ROIs per Nuclei: " + mroi);
 	
-			if ((!isNaN(rn)) && (rn > 0)) step++; // * * *
-			else showMessageWithCancel("Pomegranate Error", "Error: Invalid Radius");
+			if ((!isNaN(searchRadiusThresh)) && (searchRadiusThresh > 0)) step++; // * * *
+			else showMessageWithCancel("Pomegranate Error", "Error: Invalid Radius\nResponse: Returning to Parameter Menu");
 		}
 	}
 	else step++; // * * *
@@ -399,9 +442,9 @@ macro "Pomegranate"
 					rescue = ncroiResc(sliceList, currentMembers);
 					deleteList = Array.concat(deleteList, rescue);
 				}
-				else if (cohesionRadius > cohesionRadiusThresh) // Cigesuib Score Check
+				else if (cohesionRadius > cohesionRadiusThresh) // Cohesion Radius Check
 				{
-					print("[" + ID + "] Nuclear Index: " + nuclearIndex + "   | <X> Removing Nuclei: High Cohesion  - " + cohesionRadius);
+					print("[" + ID + "] Nuclear Index: " + nuclearIndex + "   | <X> Removing Nuclei: High Cohesion Radius - " + cohesionRadius);
 					deleteList = Array.concat(deleteList, currentMembers);
 					badCount++;
 				}
@@ -565,11 +608,11 @@ macro "Pomegranate"
 		run("Z Project...", "projection=[Average Intensity]");
 		if (transpMode) waitForUser("[Transparent Mode] Z Projection");
 
-		// Variance Map
+		// Adaptive Threshold
 		run("Auto Threshold", "method=Otsu white");
 		close("HOLD_STACK");
 
-		if (transpMode) waitForUser("[Transparent Mode] Variance Map");
+		if (transpMode) waitForUser("[Transparent Mode] Adaptive Threshold");
 		if (!transpMode) setBatchMode(false);
 
 		Dialog.create("Hole Filling");
@@ -900,39 +943,11 @@ macro "Pomegranate"
 			}
 		}
 
-		// Cell Radius Extraction
-		print("\n[Cell Radius]");
-		n = roiManager("Count");
-		setBatchMode(true);
-		for (i = 0; i < n; i++)
-		{
-			roiManager("Select", i);
-			run("Create Mask");
-			rename(call("ij.plugin.frame.RoiManager.getName", i));
-		
-			run("Select None");
-			run("Distance Map");
-			dmMax = getValue("Max");
-			
-			roiManager("Select", i);
-			Roi.setProperty("Cell_Radius", dmMax * vx);
-			roiManager("Update");
-			
-			print(call("ij.plugin.frame.RoiManager.getName", i) + " Cell Radius (Distance Map Maxima): " + (dmMax * vx) + " " + unit);
-			close(call("ij.plugin.frame.RoiManager.getName", i));
-		}
-	
-		// Create Canvas
-		selectImage(original);
-		run("Select None");
-		roiManager("Deselect");
-		
-		run("Duplicate...", "duplicate");
-		run("Multiply...", "value=0 stack");
-		run("8-bit");
-		rename("Canvas");
-		
-		// Load Nuclei MidPoints
+		step++; // * * *
+
+// [ 8 ] -----------------------------------------------------------------------------------------------------------------------------------------------	
+
+		// Load Nuclear Centroids		
 		if (runMode != "WLCL")
 		{
 			roiManager("Open", midFile);
@@ -940,7 +955,17 @@ macro "Pomegranate"
 			ncAlign = getBoolean("Align Wholecell ROIs with Nuclear Centroids?");
 		}
 		else ncAlign = false;
+
+		// Make Canvas Image
+		selectImage(original);
+		run("Select None");
+		roiManager("Deselect");
 		
+		run("Duplicate...", "duplicate");
+		run("Multiply...", "value=0 stack");
+		run("RGB Color");
+		rename("Canvas");
+
 		selectWindow("Log");
 		print("\n[Whole Cell Z Alignment]");
 		selectImage("Canvas");
@@ -971,7 +996,6 @@ macro "Pomegranate"
 		mergedcells = 0;
 		nucleimerged = 0;
 
-		// Align Nuclei
 		n = roiManager("Count");
 		for (i = 0; i < n; i++)
 		{
@@ -993,6 +1017,7 @@ macro "Pomegranate"
 							if (selectionType() != -1) 
 							{
 								roiManager("Select", k);
+								cslice = getSliceNumber();
 								nucleiContained++;
 								ID = Roi.getProperty("Object_ID");
 								currentColor = Roi.getProperty("ROI_Color");
@@ -1000,6 +1025,7 @@ macro "Pomegranate"
 								if (!ncAlign) setSlice(midslice);
 										
 								roiManager("Select", i);
+								setSlice(cslice);
 								Roi.setProperty("Paired_Nuclei", k);
 								Roi.setProperty("Object_ID", ID);
 								Roi.setProperty("Data_Type", "Whole_Cell");
@@ -1028,7 +1054,7 @@ macro "Pomegranate"
 						Roi.setProperty("nucleiContained", nucleiContained);
 						roiManager("Update");
 					}
-					print("[" + ID + "]" + call("ij.plugin.frame.RoiManager.getName", i) + " Nuclei Contained: " + nucleiContained);
+					print("[" + ID + "] - " + call("ij.plugin.frame.RoiManager.getName", i) + " Nuclei Contained: " + nucleiContained);
 				}
 				else 
 				{
@@ -1082,94 +1108,144 @@ macro "Pomegranate"
 	}
 	step++; // * * *
 
-// [ 8 ] -----------------------------------------------------------------------------------------------------------------------------------------------
+// [ 9 ] -----------------------------------------------------------------------------------------------------------------------------------------------
 
 	if (runMode != "NUCL")
 	{
 		showStatus("Pomegranate - Constructing Whole Cell Fits");
 		print("\n[Whole Cell Count]");
+		n = roiManager("Count");
+		finalcells = n;
+		print("Cells: " + n);
 	
 		selectImage("Canvas");
 		
 		// Project into 3D
-		n = roiManager("Count");
-		finalcells = n;
 		print("\n[Whole Cell Fit Construction]");
+		newImage("Binary_Filtered", "8-bit black", width, height, slices);
+
+		n = roiManager("Count");
 		for (i = 0; i < n; i++)
 		{
+			selectImage("Binary_Filtered");
 			roiManager("Select", i);
-			Roi.setProperty("Mid_Slice", true);
-			roiManager("Update");
+			ID = Roi.getProperty("Object_ID");
+			currentColor = Roi.getProperty("ROI_Color");
+		
+			if(ID == "") 
+			{
+				ID = "OID_" + i;
+				currentColor = randomHexColor();
+				Roi.setProperty("Object_ID", ID);
+				Roi.setProperty("ROI_Color", currentColor);
+				roiManager("Rename", "Y_" + ID);
+				roiManager("Update");
+			}
+			
+			run("Enlarge...", "enlarge=-1 pixel");
+			fill();
+		}
+		
+		roiManager("Deselect");
+		run("Select None"); 
+		run("Make Binary", "method=Otsu background=Default calculate black");
+		
+		// Distance Map
+		selectImage("Binary_Filtered");
+		run("Duplicate...", "duplicate title=Distance_Map");
+		run("Distance Map", "stack");
+		
+		// Skeleton Image
+		selectImage("Binary_Filtered");
+		run("Duplicate...", "duplicate title=Skeleton");
+		run("Skeletonize", "stack");
+		
+		// Skeleton Image AND Distance Map
+		imageCalculator("AND create stack", "Distance_Map","Skeleton");
+		rename("Medial_Axis_Transform");
+		close("Skeleton");
+		close("Distance_Map");
+		
+		selectImage("Medial_Axis_Transform");
+		
+		n = roiManager("Count");
+		for (i = 0; i < n; i++)
+		{
+			selectImage("Medial_Axis_Transform");
+			roiManager("Select", i);
 			
 			ID = Roi.getProperty("Object_ID");
 			currentColor = Roi.getProperty("ROI_Color");
-			crad = parseFloat(Roi.getProperty("Cell_Radius"));
+			setColor(currentColor);
 			
-			roiManager("Rename", "A_Cell_" + (i + 1) + "_MID");
-			Roi.getCoordinates(rx, ry);
-
-			// Paint Canvas
-			setColor(255,255,255);
-			fill();
-	
-			// ROI Volume Measurements
-			midn = getSliceNumber();
-			wcSlices = 1;
-			r = crad;
-			
+			mid = getSliceNumber();
+			Roi.getContainedPoints(wcxPoints, wcyPoints);
+			distMapValues = newArray(wcxPoints.length);
+			for (j = 0; j < wcxPoints.length; j++) distMapValues[j] = getPixel(wcxPoints[j], wcyPoints[j]);
+		
+			selectImage("Canvas");
 			for (k = 1; k <= nSlices; k++)
 			{
-				dz = (midn - k) * vz;
-				dr = r*(1 - sqrt(1 - pow(dz/r,2)));
-				if (isNaN(dr)) dr = -1;
-				if ((dr >= 0) && (dz != 0))
+				setSlice(k);
+				for (j = 0; j < wcxPoints.length; j++) 
 				{
-					setSlice(k);
-					makeSelection("polygon", rx, ry);
-					getStatistics(A1);
-					if (selectionType != -1)
+					efactor = vx/vz;
+					rinput = distMapValues[j];
+					zinput = (mid - k) / efactor;
+					segmentRadius = crossSectionRadius(rinput, zinput) + 1;
+					if ((rinput != 0) & (!isNaN(segmentRadius))) print("Cell " + i + ", Slice " + k + ", Segment " + j + ") --- R0: " + rinput + ", RS: " + segmentRadius + ", Z: " + zinput );
+					if (segmentRadius > 2) 
 					{
-						print("[" + ID + "] DZ: " + dz + "   R: " + r + "   DR: " + dr);
-						run("Enlarge...", "enlarge=" + -dr + "");
-						getStatistics(A2);
-						if (((A1 - dr) > A2) || (dr <= vx))
-						{
-							Roi.setName("B_Cell_" + (i + 1) + "_Slice_" + k);
-						
-							Roi.setProperty("Object_ID", ID);
-							Roi.setProperty("Data_Type", "Whole_Cell");
-							Roi.setProperty("Mid_Slice", false);
-							Roi.setProperty("ROI_Color", currentColor);
-							Roi.setStrokeColor(currentColor);
-							roiManager("Add");
-			
-							// Paint Canvas
-							setColor(255,255,255);
-							fill();
-								
-							wcSlices++;
-						}
-
+						// Compound Selection
+						setKeyDown("Shift");
+						makeOval(wcxPoints[j] - segmentRadius, wcyPoints[j] - segmentRadius, segmentRadius * 2, segmentRadius * 2);
 					}
 				}
+		
+				// Apply to Canvas and ROI Manager
+				if (selectionType() != -1)
+				{
+					// ROI Smoothing
+					run("Enlarge...", "enlarge=15 pixel");
+					run("Enlarge...", "enlarge=-15 pixel");
+		
+					Roi.setProperty("Object_ID", ID);
+					Roi.setProperty("ROI_Color", currentColor);
+					Roi.setStrokeColor(currentColor);
+					
+					if ((mid - k) == 0) Roi.setProperty("Mid_Slice", true);
+					else Roi.setProperty("Mid_Slice", false);
+					Roi.setProperty("Data_Type", "Whole_Cell");
+					
+					Roi.setName("WC_" + ID + "_" + k);
+					roiManager("Add");
+					fill();
+				}
+				run("Select None");
+				run("Remove Overlay");
 			}
-			print("[" + ID + "] Cell Index: " + (i + 1) + "   | Radius (" + unit + "): " + r + " | Slices: " + wcSlices);
-			print("");
 		}
-		run("Select None");
-
-		for (i = 0; i < roiManager("Count"); i++)
+		close("Medial_Axis_Transform");
+		selectImage("Canvas");
+		
+		// ROI Name Cleanup
+		n = roiManager("Count");
+		deleteList = newArray();
+		for (i = 0; i < n; i++) if (!startsWith(call("ij.plugin.frame.RoiManager.getName", i), "WC")) deleteList = Array.concat(deleteList, i);
+		
+		// Delete Original ROIs
+		if (deleteList.length > 0)
 		{
-			roiManager("Select", i);
-			roiManager("Set Color", Roi.getProperty("ROI_Color"));
-			roiManager("Rename", "WC_" + Roi.getProperty("Object_ID") + "_" + getSliceNumber());
+			roiManager("Select", deleteList);
+			roiManager("Delete");
 		}
+		roiManager("Deselect");
 
 		// Image Export
+		selectImage("Canvas");
 		run("Remove Overlay");
 		run("Select None");
-		run("Grays");
-		wcbinary = directoryBinary+"/Whole_Cell_Binary.tif";
+		wcbinary = directoryBinary+"/Whole_Cell_RGB.tif";
 		if (!File.exists(wcbinary)) saveAs(".tiff", wcbinary);
 		print("\n[Image Export]\nWhole Cell Binary: " + wcbinary);
 	
@@ -1218,11 +1294,18 @@ macro "Pomegranate"
 
 	step++; // * * *
 
-// [ 9 ] -----------------------------------------------------------------------------------------------------------------------------------------------
+// [ 10 ] -----------------------------------------------------------------------------------------------------------------------------------------------
 
 	// Reload and Inspect
-	selectImage(msChannel);
 	roiManager("Reset");
+	
+	if (!segMode) selectImage(msChannel);
+	else 
+	{
+		if (runMode != "NUCL") selectImage(bfChannel);
+		else if (runMode != "WLCL") selectImage(nmChannel);
+	}
+	
 	if (runMode != "NUCL") roiManager("Open", wcFile);
 	if (runMode != "WLCL") roiManager("Open", nucFile);
 	roiManager("Sort");
@@ -1278,40 +1361,48 @@ macro "Pomegranate"
 
 	step++;  // * * *
 
-// [ 10 ] -----------------------------------------------------------------------------------------------------------------------------------------------
+// [ 11 ] -----------------------------------------------------------------------------------------------------------------------------------------------
 
 	// Measure Intensity
 	showStatus("Pomegranate - Measuring Whole Cell ROIs");
 	setBatchMode(true);
+		
+	if (!segMode) selectImage(msChannel);
+	else 
+	{
+		if (runMode != "NUCL") selectImage(bfChannel);
+		else if (runMode != "WLCL") selectImage(nmChannel);
+	}
 	
-	selectImage(msChannel);
 	print("\n[Bit-Depth Checkpoint C]");
 	print("Current Bit-Depth: " + bitDepth() + "-bit");
-	
+		
 	roiManager("Deselect");
 	roiManager("Show All Without Labels");
 	roiManager("Measure");
-	
+		
 	// Append Additional Info to Output
 	n = roiManager("Count");
 	for (i = 0; i < n; i++)
 	{
 		roiManager("Select", i);
+		getSelectionCoordinates(xpos, ypos);
 		ID = Roi.getProperty("Object_ID");
 		dType = Roi.getProperty("Data_Type");
-		mid = Roi.getProperty("Mid_Slice");
+		midType = Roi.getProperty("Mid_Slice");
 		crad = Roi.getProperty("Cell_Radius");
-			
+				
 		setResult("Object_ID", i, ID);
-		if (mid) setResult("ROI_Type", i, "MID");
+		if (midType) setResult("ROI_Type", i, "MID");
 		else setResult("ROI_Type", i, "NONMID");
-
-		setResult("Cell_Radius", i, crad);
+	
 		setResult("Data_Type", i, dType);
 		setResult("Image", i, imageName);
 		setResult("Experiment", i, expName);
+		setResult("xpos", i, replace(String.join(xpos)," ",""));
+		setResult("ypos", i, replace(String.join(ypos)," ",""));
 	}
-	
+		
 	// Results Export
 	showStatus("Pomegranate - Exporting Whole Cell Measurements");
 	print("\n[Exporting Results]");
@@ -1321,7 +1412,7 @@ macro "Pomegranate"
 	
 	step++; // * * *
 
-// [ 10 ] -----------------------------------------------------------------------------------------------------------------------------------------------
+// [ 12 ] -----------------------------------------------------------------------------------------------------------------------------------------------
 
 	// Runtime Check
 	print("\n[Run Performance]");
@@ -1356,11 +1447,17 @@ function cleanAll()
 	print("\\Clear");
 } 
 
+// Radius of Spherical Cross Sections in Z
+function crossSectionRadius(r,z) 
+{
+	return(sqrt(pow(r,2) - pow(z,2)));
+}
+
 // Return a Random Color in Hex Function
 function randomHexColor()
 {
 	hex = newArray();
-	char = newArray('1','2','3','4','5','6','7','8','9','0','A','B','C','D','E','F');
+	char = newArray('1','2','3','4','5','6','7','8','9','0','a','b','c','d','e','f');
 	output = '#' + char[round((char.length - 1) * random)] + char[round((char.length - 1) * random)] + char[round((char.length - 1) * random)] + char[round((char.length - 1) * random)] + char[round((char.length - 1) * random)] + char[round((char.length - 1) * random)];
 	return output;
 }
@@ -1452,6 +1549,7 @@ function ncroiResc(sliceArr, memberArr)
 	return memberArr;
 }
 
+// Auto Focus based on Standard Deviation
 function autoFocus()
 {
 	run("Select None");
