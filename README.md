@@ -28,3 +28,9 @@ The associated publication for this software can be found on [PLOS One](#publica
 **Version 1.0c** 
 * Replaced the equation for nuclear stability score to a simpler algorithm (cohesion radius).
   * The cohesion radius describes the smallest circle that can contain all centroids - centered at the mean position of the centroids. It can also be represented as the largest distance between the mean centroid and any single centroid.
+
+**Version 1.0d** 
+* Added 'segmentation only' option - removing the requirement for a channel with intensity images.
+
+**Version 1.1** 
+* Complete overhaul of reconstruction method. Reconstruction now compensates for nonuniform radii in cells.
