@@ -5,18 +5,18 @@
  *  Hauf Lab
  *  
  *  Erod Keaton D. Baybay (2019) - erodb@vt.edu
- *  Last Updated: December 16, 2019
+ *  Last Updated: June 25, 2020
  */
 
 macro "Pomegranate"
 { 		 
-	versionFIJI = "1.52s";
+	versionFIJI = "1.53b";
 	versionPIPELINE = "1.2";
 
 	requires(versionFIJI);
-
+	
 	// Title Pop Up
-	showMessageWithCancel("Pomegranate " + versionPIPELINE, "<html>"
+	showMessage("Pomegranate " + versionPIPELINE, "<html>"
 	  		+"<font size=+3><center><b>Pomegranate</b><br></center>"
 	  		+"<font size=-2><center><b>Virginia Polytechnic Institute and State University</b></center>"
 	  		+"<font size=-2><center><b>Department of Biological Sciences - Hauf Lab</b></center>"
@@ -38,7 +38,8 @@ macro "Pomegranate"
 	print("Required FIJI Version: " + versionFIJI);
 	print("Currently Running FIJI Version: " + getVersion);
 	print("Pre-Run FIJI Memory Usage: " + IJ.freeMemory());
-	
+
+	// Roi Manager Settings
 	roiManager("Associate", "true");
 	roiManager("UseNames", "true");
 	
@@ -125,8 +126,23 @@ macro "Pomegranate"
 	// Get Image Dimensions
 	getDimensions(width, height, channels, slices, frames);
 	getVoxelSize(vx, vy, vz, unit);
-	print("Original Size: " + vx + " " + unit + ", " + vy + " " + unit + ", " + vz + " " + unit);
 
+	// Voxel Size Management
+	Dialog.create("Voxel Size Management");
+		Dialog.addNumber("Voxel Width (" + unit + ")", 0.1071);
+		Dialog.addNumber("Voxel Height (" + unit + ")", 0.1071);
+		Dialog.addNumber("Voxel Depth (" + unit + ")", 0.0659);
+	Dialog.show();
+	nvx = Dialog.getNumber();
+	nvy = Dialog.getNumber();
+	nvz = Dialog.getNumber();
+
+	selectImage(imageName);
+	setVoxelSize(nvx, nvy, nvz, unit);
+
+	// Quick Check
+	getVoxelSize(vx, vy, vz, unit);
+	print("Voxel Size: " + vx + " " + unit + ", " + vy + " " + unit + ", " + vz + " " + unit);
 	if (channels > 1)
 	{
 		channelList = newArray(channels);
@@ -137,23 +153,29 @@ macro "Pomegranate"
 		{
 			Dialog.create("Channel Selection");
 				if (!segMode) Dialog.addChoice("Measurement Channel", channelList, 1);
-				if (runMode != "WLCL") Dialog.addChoice("Nuclear Marker Channel", channelList, 1);
-				if (runMode != "NUCL") Dialog.addChoice("Bright-Field Channel", channelList, 1);
-			Dialog.show();	
-			if (!segMode) msChannel = parseInt(Dialog.getChoice()); // Measurement Channel
-			if (runMode != "WLCL") nmChannel = parseInt(Dialog.getChoice()); // Nuclear Marker Channel
-			if (runMode != "NUCL") bfChannel = parseInt(Dialog.getChoice()); // Bright-Field Channel
+				if (runMode != "WLCL") Dialog.addChoice("Nuclear Marker Channel", Array.concat(channelList, "Import External Binary"), 1);
+				if (runMode != "NUCL") Dialog.addChoice("Bright-Field Channel", Array.concat(channelList, "Import External Binary"), 1);
+			Dialog.show();
+			chparamMS = Dialog.getChoice();
+			chparamWC = Dialog.getChoice();
+			chparamNC = Dialog.getChoice();
+				
+			if (!segMode) msChannel = parseInt(chparamMS); // Measurement Channel
+			else msChannel = -1;
+			
+			if ((runMode != "WLCL") & (chparamNC != "Import External Binary")) nmChannel = parseInt(chparamNC); // Nuclear Marker Channel
+			else nmChannel = -2;
+			
+			if ((runMode != "NUCL") & (chparamWC != "Import External Binary")) bfChannel = parseInt(chparamWC); // Bright-Field Channel
+			else bfChannel = -3;
 	
 			print("\n[Run Parameters]");
 			if (!segMode) print("Measurement Channel: " + msChannel);
-			if (runMode != "WLCL") print("Nuclear Marker Channel: " + nmChannel);
-			if (runMode != "NUCL") print("Bright-Field Channel: " + bfChannel);
-	
-			// Defaulting Omitted Variables
-			if (segMode) msChannel = -1;
-			if (runMode == "WLCL") nmChannel = -2;
-			if (runMode == "NUCL") bfChannel = -3;
-
+			if ((runMode != "WLCL") & (chparamNC != "Import External Binary")) print("Nuclear Marker Channel: " + nmChannel);
+			if ((runMode != "NUCL") & (chparamWC != "Import External Binary")) print("Bright-Field Channel: " + bfChannel);
+			if (chparamNC == "Import External Binary") print("Nuclear Analysis - Input External Binary");
+			if (chparamWC == "Import External Binary") print("Whole-Cell Analysis - Input External Binary");
+			
 			// Only Generate Folders for Valid Inputs
 			if ((nmChannel != bfChannel) && (msChannel != bfChannel) && (nmChannel != msChannel)) step++; // * * *
 			else showMessageWithCancel("Pomegranate Error", "Error: Invalid Channel Selection\nResponse: Returning to Channel Selection");
@@ -226,8 +248,10 @@ macro "Pomegranate"
 	
 			run("Duplicate...", "title=DUP duplicate");
 			setSlice(round(nSlices/2));
+			if (transpMode) waitForUser("[Transparent Mode] Original Input");
 			
 			// Unsharp mask to improve Acutance
+			run("Gaussian Blur...", "sigma=0.1 scaled stack");
 			run("Unsharp Mask...", "radius=10 mask=0.5 stack");
 			if (transpMode) waitForUser("[Transparent Mode] Nuclear Unsharp Mask");
 		
@@ -273,7 +297,7 @@ macro "Pomegranate"
 			cohesionRadiusThresh = 3.0;
 			en = 0.2;
 			mroi = 5;
-			Dialog.create("Nuclei Building Parameters");
+			Dialog.create("Nuclei Building Parameterrun("Analyze Particles...", "exclude clear add");s");
 				Dialog.addNumber("Centroid Search Radius (" + unit + ")", searchRadiusThresh);
 				Dialog.addNumber("Centroid Cohesion Radius (" + unit + ")", cohesionRadiusThresh);
 				Dialog.addNumber("Enlarge Parameter (" + unit + ")", en);
@@ -474,23 +498,26 @@ macro "Pomegranate"
 		removednuclei = badCount;
 		nnuclei = nuclearIndex;
 		Array.getStatistics(midsliceList, dumpy, dumpy, meanMidslice, dumpy);
-		// Dumpy is a dummy variable
 
 		print("\n[Mean Midslice]\nSlice: " + meanMidslice);
 	
 		// Nuclear ROI Export
 		print("\n[Exporting Nuclear ROI Files]");
-		nucFile = directoryROI + replace(File.getName(imagePath),'.','_') + "_Nuclear_ROIs.zip";
+		nucFile = directoryROI + replace(File.getName(imagePath),'.','_') + "_Unfiltered_Nuclear_ROIs.zip";
 		if (!File.exists(nucFile)) roiManager("Save", nucFile);
 		print("File Created: " + nucFile);
 
 		if (transpMode) waitForUser("[Transparent Mode] Nuclear ROIs (Cleaned)");
 	}
 	else 
-	{	// Auto Calculate Midslice using Standard Deviation.
-		selectImage(bfChannel);
-		meanMidslice = autoFocus();
-		print("Autofocus: " + meanMidslice);
+	{	
+		if (nSlices > 1)
+		{
+			// Auto Calculate Midslice using Standard Deviation
+			selectImage(bfChannel);
+			meanMidslice = autoFocus();
+			print("Autofocus: " + meanMidslice);
+		}
 	}
 	
 	step++; // * * *
@@ -526,6 +553,7 @@ macro "Pomegranate"
 				Roi.setProperty("Data_Type", "Centroid");
 				Roi.setProperty("ROI_Color", currentColor);
 				Roi.setName("Z_" + ID + "_Centroid");
+				Roi.setPosition(ps);
 				roiManager("Add");
 	
 				print("[" + ID + "] Centroid ROI: " + i + "   | X: " + px + (pw/2) + " - Y: " + py + (ph/2) + " | Slice: " + ps);
@@ -556,397 +584,481 @@ macro "Pomegranate"
 	
 	if (runMode != "NUCL")
 	{
-		showStatus("Pomegranate - Generating Whole Cell Binary");
-		selectImage(bfChannel);
-		run("32-bit");
-		run("Reciprocal", "stack");
-		run("Reciprocal", "stack"); // Double run("Reciprocal") converts 0 to NaN
-	
-		// Select Slice
-		original = getTitle();
-		roiManager("Deselect");
-		run("Select None");
-		run("Duplicate...", "title=HOLD duplicate");
-		
-		midslice = 1;
-		while(midslice == 1)
+		if (channels < 2)
 		{
+			wcChoices = newArray("Bright-field (Default 2D Segmentation)","Binary (External Segmentation Input)");
+			Dialog.create("Whole-Cell Only, Single Image Input");
+				Dialog.addChoice("Input Image", wcChoices);
+			Dialog.show();
+			if (Dialog.getChoice() == wcChoices[0]) chparamWC = -1;
+			else chparamWC = "Import External Binary";
+		}
+		if (chparamWC != "Import External Binary")
+		{
+			showStatus("Pomegranate - Generating Whole Cell Binary");
 			selectImage(bfChannel);
-			setSlice(meanMidslice);
-			waitForUser("Suggested Mid Slice: " + meanMidslice + "\nPlease Select a Mid Slice");
-			midslice = getSliceNumber();
-		}
-
-		if (!transpMode) setBatchMode(true);
-		for (i = 1; i < midslice; i++)
-		{
-			selectWindow("HOLD");
-			setSlice(i);
-			run("Duplicate...", "title=HOLD_"+i);
-			run("Remove Overlay");
-
-			// Gaussian Blur
-			run("Gaussian Blur...", "sigma=0.3 scaled");
-			if ((transpMode) && (i == 1))  waitForUser("[Transparent Mode] Gaussian Blur");
-
-			// Unsharp Mask
-			run("Unsharp Mask...", "radius=" + getWidth() + " mask=0.90");
-			if ((transpMode) && (i == 1)) waitForUser("[Transparent Mode] Unsharp Mask");
+			if (transpMode) waitForUser("[Transparent Mode] Input Brightfield");
+			
+			run("32-bit");
+			run("Reciprocal", "stack");
+			run("Reciprocal", "stack"); // Double run("Reciprocal") converts 0 to NaN
 		
-			// Thresholding
-			run("8-bit");
-			setAutoThreshold("Otsu dark");
-			setThreshold(1, 10e6);
-			run("Convert to Mask");
-			//run("Open");
-		}
-		close("HOLD");
-		if (transpMode) setBatchMode(false);
-	
-		// Projection
-		run("Images to Stack", "name=HOLD_STACK title=HOLD use");
-		run("Z Project...", "projection=[Average Intensity]");
-		if (transpMode) waitForUser("[Transparent Mode] Z Projection");
-
-		// Adaptive Threshold
-		run("Auto Threshold", "method=Otsu white");
-		close("HOLD_STACK");
-
-		if (transpMode) waitForUser("[Transparent Mode] Adaptive Threshold");
-		if (!transpMode) setBatchMode(false);
-
-		Dialog.create("Hole Filling");
-		Dialog.addChoice("Method", newArray("Basic","Shape-based", "None"));
-		Dialog.show();
-		holeMode = Dialog.getChoice();
-		print("\n[Fill Holes]");
-		print("Method: ", holeMode);
-
-		if (holeMode == "Basic")
-		{
-			run("Fill Holes");
-		}
-		else if (holeMode == "Shape-based")
-		{
-			// Shape-Based Hole Filling
-			hfminSize = 0;
-			hfmaxSize = 20;
-			hfminCirc = 0.8;
-			hfmaxCirc = 1;
-			Dialog.create("Shape-based Hole Filling");
-				Dialog.addNumber("Minimum Size (sq. " + unit + ")", hfminSize);
-				Dialog.addNumber("Maximum Size (sq. " + unit + ")", hfmaxSize);
-				Dialog.addNumber("Minimum Circularity", hfminCirc);
-				Dialog.addNumber("Maximum Circularity", hfmaxCirc);
-			Dialog.show();
-			binary = getTitle();
-			run("Duplicate...", "title=Fill_Holes");
-			run("Invert");
-			run("Analyze Particles...", "size=0-Infinity pixel clear add");
-			selectImage(binary);
-			for (i = 0; i < roiManager("Count"); i++)
-			{
-				roiManager("Select", i);
-				hfparam = false;
-				if ((getValue("Area") > hfminSize) & (getValue("Area") < hfmaxSize)) hfparam = true;
-				if ((getValue("Circ.") > hfminCirc) & (getValue("Circ.") < hfmaxCirc)) hfparam = true;
-				if (hfparam)
-				{
-					setColor(255, 255, 255);
-					fill();
-				}
-			}
-			close("Fill_Holes");
+			// Select Slice
+			roiManager("Deselect");
 			run("Select None");
-			print("Minimum Size: ", hfminSize); 
-			print("Maximum Size: ", hfmaxSize); 
-			print("Minimum Circularity: ", hfminCirc); 
-			print("Maximum Circularity: ", hfmaxCirc); 
-		}
-		if (transpMode) waitForUser("[Transparent Mode] Shape Based Hole Exclusion");
-
-		
-		roiManager("Reset");
-		makeRectangle(1, 1, 1, 1);
-		run("Select None");
-
-		// Binary Smoothing
-		run("Gaussian Blur...", "sigma=2 stack");
-		run("Make Binary", "method=Otsu background=Dark black");
-		run("Invert");
-		if (transpMode) waitForUser("[Transparent Mode] Gaussian Smoothing");
-
-		rename("Binary");
-
-		/*  [ Notes ]
-		 *  For whatever reason, after the ROI Manager is reset, a selection
-		 *  needs to be made in order to use Analyze Particles - otherwise
-		 *  no ROIs will be added to the ROI Manager
-		 */
-		
-		// BioVoxxel Watershed
-		bvMode = getBoolean("Use Watershed Irregular Features? (BioVoxxel Required)");
-		if (bvMode)
-		{
-			bvErosion = 1;
-			bvConvThresh = 0.75;
-			bvSepSize = "0-15";
-			Dialog.create("BioVoxxel Watershed Irregular Features");
-				Dialog.addNumber("Erosion", bvErosion);
-				Dialog.addNumber("Convexity Threshold", bvConvThresh);
-				Dialog.addString("Separator Size", bvSepSize);
-			Dialog.show();
-			bvErosion = Dialog.getNumber();
-			bvConvThresh = Dialog.getNumber();
-			bvSepSize = Dialog.getString();
-			run("Watershed Irregular Features", "erosion=" + bvErosion + " convexity_threshold=" + bvConvThresh + " separator_size=" + bvSepSize);
-
-			print("\n[Watershed Irregular Features (BioVoxxel)]");
-			print("Erosion: ", bvErosion); 
-			print("Convexity Threshold: ", bvConvThresh); 
-			print("Seperator Size: ", bvSepSize);
+			run("Duplicate...", "title=HOLD duplicate");
 			
-			if (transpMode) waitForUser("[Transparent Mode] Watershedding");
-		}
-		
-		run("Erode"); // See Notes
-		run("Analyze Particles...", "size=250-Infinity pixel exclude clear add");
-		
-		/*  [ Notes ]
-		 *  Erode step above is necessary for Analyze Particles to perform well
-		 *  The Erode step is compensated for later in the smoothing step with
-		 *  an Enlarge step (Enlarge being similar to the Dilate Morphological Operator)
-		 *  
-		 *  The enlarge step is annotated with a <+>
-		 */
-		
-		// Smoothing Parameters
-		gap = 10;
-		interpn = 5;
-		Dialog.create("Clean Up Parameters");
-			Dialog.addNumber("Gap Closure Size (pixels)", gap);
-			Dialog.addNumber("Interpolation Smoothing (pixels)", interpn);
-		Dialog.show();
-		gap = Dialog.getNumber();
-		interpn = Dialog.getNumber();
-
-		print("\n[ROI Smoothing]");
-		print("Gap Closure Size (pixels): ", gap);
-		print("Interpolation Smoothing (pixels): ", interpn);
-
-		// Band Size Measurement
-		selectImage("Binary");
-		run("Duplicate...", "title=INTERCELL duplicate");
-		run("Invert");
-		run("Distance Map");
-		run("32-bit");
-		run("Reciprocal");
-		run("Reciprocal"); // Double run("Reciprocal") converts 0 to NaN
-		run("Maximum...", "radius=10");
-		setThreshold(0, 1e99);
-		run("NaN Background");
-		
-		bandSize = getValue("Median")/2;
-		print("Band Size (pixels): ", bandSize);
-		if (transpMode) waitForUser("[Transparent Mode] Band Size Measurement");
-		
-		// Smoothing
-		selectImage(bfChannel);
-		n = roiManager("Count");
-		deleteList = newArray();
-		for (i = 0; i < n; i ++)
-		{
-			roiManager("Select",i);
-			getSelectionBounds(px, py, pw, ph);
-			if (pw * ph < 0.4 * (getWidth() * getHeight()))
+			midslice = 1;
+			while(midslice == 1)
 			{
-				// Gap Closure
-				run("Enlarge...", "enlarge=" + gap + " pixel");
-				run("Enlarge...", "enlarge=-" + gap + " pixel");
-
-				// Band Coverage
-				run("Enlarge...", "enlarge=" + bandSize + " pixel");
-
-				// Interpolation Smoothing
-				run("Interpolate", "interval=" + interpn + " smooth adjust");
-				
-				if (selectionType() != -1) roiManager("Update");
+				selectImage(bfChannel);
+				setSlice(meanMidslice);
+				waitForUser("Suggested Mid Slice: " + meanMidslice + "\nPlease Select a Mid Slice");
+				midslice = getSliceNumber();
 			}
-			else 
+	
+			if (!transpMode) setBatchMode(true);
+			for (i = 1; i < midslice; i++)
 			{
-				print("Smoothing Failed (ROI too large): Temporary ROI " + call("ij.plugin.frame.RoiManager.getName", i));
-				deleteList = Array.concat(i, deleteList);
-			}
-		}
-		if (transpMode) waitForUser("[Transparent Mode] Smoothing");
-
-		// Cell Count
-		ncells = roiManager("Count");
-
-		// Filtering Parameters
-		solidThresh = 0.9;
-		roiMargin = 10;
-		cleanOverlap = true;
-		manualScreen = true;
-		Dialog.create("ROI Filtering");
-			Dialog.addNumber("Solidity Threshold: ", solidThresh);
-			Dialog.addNumber("ROI Margin (pixels): ", roiMargin);
-			Dialog.addCheckbox("Clean Overlapping ROIs ", cleanOverlap);
-			Dialog.addCheckbox("Manual Screen ", manualScreen);
-		Dialog.show();
-		solidThresh = Dialog.getNumber();
-		roiMargin = Dialog.getNumber();
-		cleanOverlap = Dialog.getCheckbox();
-		manualScreen = Dialog.getCheckbox();
-
-		print("\n[ROI Filtering Parametes]");
-		print("Solidity Threshold: " + solidThresh);
-		print("ROI Margin (pixels): " + roiMargin);
-		if(cleanOverlap) print("Cleaning Overlap...");
-		else print("Not Cleaning Overlap...");
-
-		// Solidity Filtering
-		print("\n[Solidity Filtering]");
-		nonsolidcells = 0;
-		nonsolidX = newArray();
-		nonsolidY = newArray();
-		
-		n = roiManager("Count");
-		deleteList = newArray();
-		for (i = 0; i < n; i++)
-		{
-			roiManager("Select", i);
-			Roi.getContainedPoints(xp, yp);
+				selectWindow("HOLD");
+				setSlice(i);
+				run("Duplicate...", "title=HOLD_"+i);
+				run("Remove Overlay");
+	
+				// Gaussian Blur
+				run("Gaussian Blur...", "sigma=0.3 scaled");
+				if ((transpMode) && (i == 1))  waitForUser("[Transparent Mode] Gaussian Blur");
+	
+				// Unsharp Mask
+				run("Unsharp Mask...", "radius=" + getWidth() + " mask=0.90");
+				if ((transpMode) && (i == 1)) waitForUser("[Transparent Mode] Unsharp Mask");
 			
-			solidScore = solidity();
-			if (solidScore < solidThresh)
-			{
-				deleteList = Array.concat(i, deleteList);
-				print("Poor Solidity (" + solidScore + "): Temporary ROI " + call("ij.plugin.frame.RoiManager.getName", i)); 
-				
-				nonsolidcells++;
-				nonsolidX = Array.concat(nonsolidX, xp);
-				nonsolidY = Array.concat(nonsolidY, yp);
+				// Thresholding
+				run("8-bit");
+				setAutoThreshold("Otsu dark");
+				setThreshold(1, 10e6);
+				run("Convert to Mask", "method=Otsu background=Dark black");
+				//run("Open");
 			}
-			else print("Good Solidity (" + solidScore + "): Temporary ROI " + call("ij.plugin.frame.RoiManager.getName", i)); 
-		}
+			close("HOLD");
+			if (transpMode) setBatchMode(false);
 		
-		// Clean Up Bad ROIs
-		if (deleteList.length > 0)
-		{
-			roiManager("Select", deleteList);
-			roiManager("Delete");
-		}
-		roiManager("Deselect");
-
-		// Edge Removal
-		print("\n[Edge Cell Removal]");
-		oobcells = 0;
-		oobX = newArray();
-		oobY = newArray();
-		
-		iw = getWidth();
-		ih = getHeight();
-		
-		n = roiManager("Count");
-		deleteList = newArray();
-		for (i = 0; i < n; i++)
-		{
-			roiManager("Select", i);
-			Roi.getContainedPoints(xp, yp);
-			Roi.getBounds(rx, ry, rw, rh);
-			
-			if ((rx > roiMargin) && (ry > roiMargin) && ((rx + rw) < (iw - roiMargin)) && ((ry + rh) < (ih - roiMargin))) print(call("ij.plugin.frame.RoiManager.getName", i) + " - within bounds");
-			else 
+			// Projection
+			run("Images to Stack", "name=HOLD_STACK title=HOLD use");
+			run("Z Project...", "projection=[Average Intensity]");
+			if (transpMode) waitForUser("[Transparent Mode] Z Projection");
+	
+			// Adaptive Threshold
+			run("Auto Threshold", "method=Otsu white");
+			close("HOLD_STACK");
+	
+			if (transpMode) waitForUser("[Transparent Mode] Adaptive Threshold");
+			if (!transpMode) setBatchMode(false);
+	
+			attemptFill = true;
+			while(attemptFill)
 			{
-				deleteList = Array.concat(i, deleteList);
-				print(call("ij.plugin.frame.RoiManager.getName", i) + " - out of bounds [Deleting]");
-				
-				oobcells++;
-				oobX = Array.concat(oobX, xp);
-				oobY = Array.concat(oobY, yp);
-			}
-		}
-
-		// Clean Up Bad ROIs
-		if (deleteList.length > 0)
-		{
-			roiManager("Select", deleteList);
-			roiManager("Delete");
-		}
-
-		run("Select None");
-		roiManager("Deselect");
-
-		// Manual Screen
-		if (manualScreen)
-		{
-			selectWindow("ROI Manager");
-			waitForUser("Manually Delete invalid ROIs from the ROI Manager.\nOnce complete, click OK to proceed.");
-		}
+				Dialog.create("Hole Filling");
+				Dialog.addChoice("Method", newArray("Basic","Shape-based", "None"));
+				Dialog.show();
+				holeMode = Dialog.getChoice();
+				print("\n[Fill Holes]");
+				print("Method: ", holeMode);
 		
-		// Overlapping ROI Cleanup
-		if (cleanOverlap)
-		{
-			n = roiManager("Count");
-			for (i = 0; i < n; i++)
-			{
-				for (j = i + 1; j < n; j++)
+				if (holeMode == "Basic")
 				{
-					roiManager("Select", newArray(i,j));
-					roiManager("AND");
-					if (selectionType() != -1)
+					run("Fill Holes");
+				}
+				else if (holeMode == "Shape-based")
+				{
+					// Shape-Based Hole Filling
+					hfminSize = 0;
+					hfmaxSize = 10;
+					hfminCirc = 0.5;
+					hfmaxCirc = 1;
+					Dialog.create("Shape-based Hole Filling");
+						Dialog.addMessage("The following parameters are shape descriptors\nfor the holes you wish to detect.\n");
+						Dialog.addNumber("Minimum Size (sq. " + unit + ")", hfminSize);
+						Dialog.addNumber("Maximum Size (sq. " + unit + ")", hfmaxSize);
+						Dialog.addNumber("Minimum Circularity", hfminCirc);
+						Dialog.addNumber("Maximum Circularity", hfmaxCirc);
+					Dialog.show();
+					hfminSize = Dialog.getNumber();
+					hfmaxSize = Dialog.getNumber();
+					hfminCirc = Dialog.getNumber();
+					hfmaxCirc = Dialog.getNumber();
+					
+					binary = getTitle();
+					setBatchMode(false);
+					run("Duplicate...", "title=Fill_Holes");
+					run("Invert");
+					run("Analyze Particles...", "size=0-Infinity pixel clear add");
+					selectImage(binary);
+					for (i = 0; i < roiManager("Count"); i++)
 					{
 						roiManager("Select", i);
-						run("Interpolate", "interval=1 adjust");
-						Roi.getCoordinates(ix, iy);
-						newix = newArray();
-						newiy = newArray();
-			
-						roiManager("Select", j);
-						run("Interpolate", "interval=1 adjust");
-						Roi.getCoordinates(jx, jy);
-						newjx = newArray();
-						newjy = newArray();
-			
-						makeSelection("freehand", jx, jy);
-						for (k = 0; k < ix.length; k++) 
+						if ((getValue("Area") >= hfminSize) & (getValue("Area") <= hfmaxSize))
 						{
-							if (!Roi.contains(ix[k], iy[k]))
+							if ((getValue("Circ.") >= hfminCirc) & (getValue("Circ.") <= hfmaxCirc)) 
 							{
-								newix = Array.concat(newix, ix[k]);
-								newiy = Array.concat(newiy, iy[k]);
+								setColor(255, 255, 255);
+								fill();
 							}
 						}
+					}
+					close("Fill_Holes");
+					run("Select None");
+					print("Minimum Size: ", hfminSize); 
+					print("Maximum Size: ", hfmaxSize); 
+					print("Minimum Circularity: ", hfminCirc); 
+					print("Maximum Circularity: ", hfmaxCirc); 
+				}
+				attemptFill = getBoolean("Perform another iteration of Hole Filling?");
+			}
+			if (transpMode) waitForUser("[Transparent Mode] Shape Based Hole Exclusion");
+	
 			
-						makeSelection("freehand", ix, iy);
-						for (k = 0; k < jx.length; k++) 
-						{
-							if (!Roi.contains(jx[k], jy[k]))
-							{
-								newjx = Array.concat(newjx, jx[k]);
-								newjy = Array.concat(newjy, jy[k]);
-							}
-						}
+			roiManager("Reset");
+			makeRectangle(1, 1, 1, 1);
+			run("Select None");
+	
+			// Binary Smoothing
+			run("Gaussian Blur...", "sigma=2 stack");
+			run("Make Binary", "method=Otsu background=Dark black");
+			run("Invert");
+			if (transpMode) waitForUser("[Transparent Mode] Gaussian Smoothing");
+	
+			rename("Binary");
+	
+			/*  [ Notes ]
+			 *  For whatever reason, after the ROI Manager is reset, a selection
+			 *  needs to be made in order to use Analyze Particles - otherwise
+			 *  no ROIs will be added to the ROI Manager
+			 */
 			
-						roiManager("Select", i);
-						makeSelection("freehand", newix, newiy);
-						if (selectionType() != -1) roiManager("Update");
-			
-						roiManager("Deselect");
+			// BioVoxxel Watershed
+			bvMode = getBoolean("Use Watershed Irregular Features? (BioVoxxel Required)");
+			if (bvMode)
+			{
+				bvErosion = 1;
+				bvConvThresh = 0.75;
+				bvSepSize = "0-15";
+				Dialog.create("BioVoxxel Watershed Irregular Features");
+					Dialog.addNumber("Erosion", bvErosion);
+					Dialog.addNumber("Convexity Threshold", bvConvThresh);
+					Dialog.addString("Separator Size", bvSepSize);
+				Dialog.show();
+				bvErosion = Dialog.getNumber();
+				bvConvThresh = Dialog.getNumber();
+				bvSepSize = Dialog.getString();
+				run("Watershed Irregular Features", "erosion=" + bvErosion + " convexity_threshold=" + bvConvThresh + " separator_size=" + bvSepSize);
+	
+				print("\n[Watershed Irregular Features (BioVoxxel)]");
+				print("Erosion: ", bvErosion); 
+				print("Convexity Threshold: ", bvConvThresh); 
+				print("Seperator Size: ", bvSepSize);
 				
-						roiManager("Select", j);
-						makeSelection("freehand", newjx, newjy);
-						if (selectionType() != -1) roiManager("Update");
+				if (transpMode) waitForUser("[Transparent Mode] Watershedding");
+			}
+			
+			run("Erode"); // See Notes
+			run("Analyze Particles...", "size=250-Infinity pixel exclude clear add");
+			
+			/*  [ Notes ]
+			 *  Erode step above is necessary for Analyze Particles to perform well
+			 *  The Erode step is compensated for later in the smoothing step with
+			 *  an Enlarge step (Enlarge being similar to the Dilate Morphological Operator)
+			 *  
+			 *  The enlarge step is annotated with a <+>
+			 */
+			
+			// Smoothing Parameters
+			gap = 10;
+			interpn = 5;
+			Dialog.create("Clean Up Parameters");
+				Dialog.addNumber("Gap Closure Size (pixels)", gap);
+				Dialog.addNumber("Interpolation Smoothing (pixels)", interpn);
+			Dialog.show();
+			gap = Dialog.getNumber();
+			interpn = Dialog.getNumber();
+	
+			print("\n[ROI Smoothing]");
+			print("Gap Closure Size (pixels): ", gap);
+			print("Interpolation Smoothing (pixels): ", interpn);
+	
+			// Band Size Measurement
+			selectImage("Binary");
+			run("Duplicate...", "title=INTERCELL duplicate");
+			run("Invert");
+			run("Distance Map");
+			run("32-bit");
+			run("Reciprocal");
+			run("Reciprocal"); // Double run("Reciprocal") converts 0 to NaN
+			run("Maximum...", "radius=10");
+			setThreshold(0, 1e99);
+			run("NaN Background");
+			
+			bandSize = getValue("Median")/2;
+			print("Band Size (pixels): ", bandSize);
+			if (transpMode) waitForUser("[Transparent Mode] Band Size Measurement");
+			
+			// Smoothing
+			selectImage(bfChannel);
+			n = roiManager("Count");
+			deleteList = newArray();
+			for (i = 0; i < n; i ++)
+			{
+				roiManager("Select",i);
+				getSelectionBounds(px, py, pw, ph);
+				if (pw * ph < 0.4 * (getWidth() * getHeight()))
+				{
+					// Gap Closure
+					run("Enlarge...", "enlarge=" + gap + " pixel");
+					run("Enlarge...", "enlarge=-" + gap + " pixel");
+	
+					// Band Coverage
+					run("Enlarge...", "enlarge=" + bandSize + " pixel");
+	
+					// Interpolation Smoothing
+					run("Interpolate", "interval=" + interpn + " smooth adjust");
+					
+					if (selectionType() != -1) roiManager("Update");
+				}
+				else 
+				{
+					print("Smoothing Failed (ROI too large): Temporary ROI " + call("ij.plugin.frame.RoiManager.getName", i));
+					deleteList = Array.concat(i, deleteList);
+				}
+			}
+			if (transpMode) waitForUser("[Transparent Mode] Smoothing");
+	
+			// Cell Count
+			ncells = roiManager("Count");
+	
+			// Filtering Parameters
+			solidThresh = 0.9;
+			roiMargin = 10;
+			cleanOverlap = true;
+			manualScreen = true;
+			Dialog.create("ROI Filtering");
+				Dialog.addNumber("Solidity Threshold: ", solidThresh);
+				Dialog.addNumber("ROI Margin (pixels): ", roiMargin);
+				Dialog.addCheckbox("Clean Overlapping ROIs ", cleanOverlap);
+				Dialog.addCheckbox("Manual Screen ", manualScreen);
+			Dialog.show();
+			solidThresh = Dialog.getNumber();
+			roiMargin = Dialog.getNumber();
+			cleanOverlap = Dialog.getCheckbox();
+			manualScreen = Dialog.getCheckbox();
+	
+			print("\n[ROI Filtering Parametes]");
+			print("Solidity Threshold: " + solidThresh);
+			print("ROI Margin (pixels): " + roiMargin);
+			if(cleanOverlap) print("Cleaning Overlap...");
+			else print("Not Cleaning Overlap...");
+	
+			// Solidity Filtering
+			print("\n[Solidity Filtering]");
+			nonsolidcells = 0;
+			nonsolidX = newArray();
+			nonsolidY = newArray();
+			
+			n = roiManager("Count");
+			deleteList = newArray();
+			for (i = 0; i < n; i++)
+			{
+				roiManager("Select", i);
+				Roi.getContainedPoints(xp, yp);
+				
+				solidScore = solidity();
+				if (solidScore < solidThresh)
+				{
+					deleteList = Array.concat(i, deleteList);
+					print("Poor Solidity (" + solidScore + "): Temporary ROI " + call("ij.plugin.frame.RoiManager.getName", i)); 
+					
+					nonsolidcells++;
+					nonsolidX = Array.concat(nonsolidX, xp);
+					nonsolidY = Array.concat(nonsolidY, yp);
+				}
+				else print("Good Solidity (" + solidScore + "): Temporary ROI " + call("ij.plugin.frame.RoiManager.getName", i)); 
+			}
+			
+			// Clean Up Bad ROIs
+			if (deleteList.length > 0)
+			{
+				roiManager("Select", deleteList);
+				roiManager("Delete");
+			}
+			roiManager("Deselect");
+	
+			// Edge Removal
+			print("\n[Edge Cell Removal]");
+			oobcells = 0;
+			oobX = newArray();
+			oobY = newArray();
+			
+			iw = getWidth();
+			ih = getHeight();
+			
+			n = roiManager("Count");
+			deleteList = newArray();
+			for (i = 0; i < n; i++)
+			{
+				roiManager("Select", i);
+				Roi.getContainedPoints(xp, yp);
+				Roi.getBounds(rx, ry, rw, rh);
+				
+				if ((rx > roiMargin) && (ry > roiMargin) && ((rx + rw) < (iw - roiMargin)) && ((ry + rh) < (ih - roiMargin))) print(call("ij.plugin.frame.RoiManager.getName", i) + " - within bounds");
+				else 
+				{
+					deleteList = Array.concat(i, deleteList);
+					print(call("ij.plugin.frame.RoiManager.getName", i) + " - out of bounds [Deleting]");
+					
+					oobcells++;
+					oobX = Array.concat(oobX, xp);
+					oobY = Array.concat(oobY, yp);
+				}
+			}
+	
+			// Clean Up Bad ROIs
+			if (deleteList.length > 0)
+			{
+				roiManager("Select", deleteList);
+				roiManager("Delete");
+			}
+	
+			run("Select None");
+			roiManager("Deselect");
+	
+			// Manual Screen
+			if (manualScreen)
+			{
+				print("Pre-Manual Screen ROI Count: ", roiManager("Count")); 
+				selectWindow("ROI Manager");
+				waitForUser("Manually Delete invalid ROIs from the ROI Manager.\nOnce complete, click OK to proceed.");
+				print("Post-Manual Screen ROI Count: ", roiManager("Count")); 
+			}
+			
+			// Overlapping ROI Cleanup
+			if (cleanOverlap)
+			{
+				n = roiManager("Count");
+				for (i = 0; i < n; i++)
+				{
+					for (j = i + 1; j < n; j++)
+					{
+						roiManager("Select", newArray(i,j));
+						roiManager("AND");
+						if (selectionType() != -1)
+						{
+							roiManager("Select", i);
+							run("Interpolate", "interval=1 adjust");
+							Roi.getCoordinates(ix, iy);
+							newix = newArray();
+							newiy = newArray();
+				
+							roiManager("Select", j);
+							run("Interpolate", "interval=1 adjust");
+							Roi.getCoordinates(jx, jy);
+							newjx = newArray();
+							newjy = newArray();
+				
+							makeSelection("freehand", jx, jy);
+							for (k = 0; k < ix.length; k++) 
+							{
+								if (!Roi.contains(ix[k], iy[k]))
+								{
+									newix = Array.concat(newix, ix[k]);
+									newiy = Array.concat(newiy, iy[k]);
+								}
+							}
+				
+							makeSelection("freehand", ix, iy);
+							for (k = 0; k < jx.length; k++) 
+							{
+								if (!Roi.contains(jx[k], jy[k]))
+								{
+									newjx = Array.concat(newjx, jx[k]);
+									newjy = Array.concat(newjy, jy[k]);
+								}
+							}
+				
+							roiManager("Select", i);
+							makeSelection("freehand", newix, newiy);
+							if (selectionType() != -1) roiManager("Update");
+				
+							roiManager("Deselect");
+					
+							roiManager("Select", j);
+							makeSelection("freehand", newjx, newjy);
+							if (selectionType() != -1) roiManager("Update");
+						}
 					}
 				}
 			}
-		}
 
-		step++; // * * *
+			step++; // * * *
 
 // [ 8 ] -----------------------------------------------------------------------------------------------------------------------------------------------	
+		
+		}
+		else 
+		{
+			// Loading Binary when Skipping Bright-field
+			if (channels > 1)
+			{
+				waitForUser("Please select Input External Binary\nfor whole-cell analysis.");
+				Dialog.create("Input Image");
+				Dialog.addChoice("Input Method", newArray("Select Image from Directory","Manually Enter Path"));
+				Dialog.show();
+				if (Dialog.getChoice() == "Select Image from Directory") wcimagePath = File.openDialog("Choose an Input  File");
+				open(wcImage);
+			}
 
+			if (nSlices > 1) run("Z Project...", "projection=[Max Intensity]");
+			rename("INPUT");
+
+			// Calculate absolute max slices to make complete reconstruction
+			run("Duplicate...", "title=DUP duplicate");
+			
+			// Guarentee Binary
+			run("8-bit");
+			setAutoThreshold("Otsu dark");
+			setThreshold(1, 10e6);
+			run("Convert to Mask", "method=Otsu background=Dark black");
+			
+			run("Distance Map");
+			addSlices = getValue("Max") + 2; // 2 Slice Buffer
+			inputWidth = getWidth();
+			inputHeight = getHeight();
+
+			// Generate New Input (Redundant)
+			newImage("BINARY", "8-bit black", inputWidth, inputHeight, 1 + (addSlices * 2));
+			selectImage("INPUT");
+			run("Select All");
+			run("Copy");
+			selectImage("BINARY");
+			
+			midslice = round(nSlices/2);
+			setSlice(midslice);
+			run("Paste");
+
+			// Guarentee Binary
+			run("8-bit");
+			setAutoThreshold("Otsu dark");
+			setThreshold(1, 10e6);
+			run("Convert to Mask", "method=Otsu background=Dark black");
+			close("INPUT");
+			close("DUP");
+			roiManager("Deselect");
+			run("Select None"); 
+			rename(bfChannel);
+			setVoxelSize(nvx, nvy, nvz, unit);
+
+			// Make ROIs
+			run("Analyze Particles...", "clear add stack");	
+		}
+		
 		// Load Nuclear Centroids		
 		if (runMode != "WLCL")
 		{
@@ -957,7 +1069,7 @@ macro "Pomegranate"
 		else ncAlign = false;
 
 		// Make Canvas Image
-		selectImage(original);
+		selectImage(bfChannel);
 		run("Select None");
 		roiManager("Deselect");
 		
@@ -965,6 +1077,7 @@ macro "Pomegranate"
 		run("Multiply...", "value=0 stack");
 		run("RGB Color");
 		rename("Canvas");
+		setVoxelSize(nvx, nvy, nvz, unit);
 
 		selectWindow("Log");
 		print("\n[Whole Cell Z Alignment]");
@@ -1117,6 +1230,13 @@ macro "Pomegranate"
 		n = roiManager("Count");
 		finalcells = n;
 		print("Cells: " + n);
+
+		// Reconstruction Input ROI Export
+		showStatus("Pomegranate - Exporting Whole Cell ROis");
+		print("\n[Exporting Whole Cell ROIs]");
+		rinpFile = directoryROI + replace(File.getName(imagePath),'.','_') + "_Unfiltered_Reconstruction_Input_Whole_Cell_ROIs.zip";
+		if (!File.exists(rinpFile)) roiManager("Save", rinpFile);
+		print("File Created: " + rinpFile);
 	
 		selectImage("Canvas");
 		
@@ -1145,26 +1265,34 @@ macro "Pomegranate"
 			run("Enlarge...", "enlarge=-1 pixel");
 			fill();
 		}
-		
+
+		// Guarentee Binary
+		selectImage("Binary_Filtered");
+		run("8-bit");
+		setAutoThreshold("Otsu dark");
+		setThreshold(1, 10e6);
+		run("Convert to Mask", "method=Otsu background=Dark black");
 		roiManager("Deselect");
 		run("Select None"); 
-		run("Make Binary", "method=Otsu background=Default calculate black");
 		
 		// Distance Map
 		selectImage("Binary_Filtered");
 		run("Duplicate...", "duplicate title=Distance_Map");
 		run("Distance Map", "stack");
+		if (transpMode) waitForUser("[Transparent Mode] Distance Map");
 		
 		// Skeleton Image
 		selectImage("Binary_Filtered");
 		run("Duplicate...", "duplicate title=Skeleton");
 		run("Skeletonize", "stack");
+		if (transpMode) waitForUser("[Transparent Mode] Skeleton");
 		
 		// Skeleton Image AND Distance Map
 		imageCalculator("AND create stack", "Distance_Map","Skeleton");
 		rename("Medial_Axis_Transform");
 		close("Skeleton");
 		close("Distance_Map");
+		if (transpMode) waitForUser("[Transparent Mode] Skeleton Distance Map Union");
 		
 		selectImage("Medial_Axis_Transform");
 		
@@ -1178,15 +1306,15 @@ macro "Pomegranate"
 			currentColor = Roi.getProperty("ROI_Color");
 			setColor(currentColor);
 			
-			mid = getSliceNumber();
 			Roi.getContainedPoints(wcxPoints, wcyPoints);
 			distMapValues = newArray(wcxPoints.length);
 			for (j = 0; j < wcxPoints.length; j++) distMapValues[j] = getPixel(wcxPoints[j], wcyPoints[j]);
 		
 			selectImage("Canvas");
+			roiManager("Select", i);
+			mid = getSliceNumber();
 			for (k = 1; k <= nSlices; k++)
 			{
-				setSlice(k);
 				for (j = 0; j < wcxPoints.length; j++) 
 				{
 					efactor = vx/vz;
@@ -1216,8 +1344,9 @@ macro "Pomegranate"
 					if ((mid - k) == 0) Roi.setProperty("Mid_Slice", true);
 					else Roi.setProperty("Mid_Slice", false);
 					Roi.setProperty("Data_Type", "Whole_Cell");
-					
 					Roi.setName("WC_" + ID + "_" + k);
+					Roi.setPosition(k);
+					setSlice(k);
 					roiManager("Add");
 					fill();
 				}
@@ -1252,7 +1381,7 @@ macro "Pomegranate"
 		// Whole Cell ROI Export
 		showStatus("Pomegranate - Exporting Whole Cell ROis");
 		print("\n[Exporting Whole Cell ROIs]");
-		wcFile = directoryROI + replace(File.getName(imagePath),'.','_') + "_Whole_Cell_ROIs.zip";
+		wcFile = directoryROI + replace(File.getName(imagePath),'.','_') + "_Unfiltered_Reconstruction_Output_Whole_Cell_ROIs.zip";
 		if (!File.exists(wcFile)) roiManager("Save", wcFile);
 		print("File Created: " + wcFile);
 
@@ -1316,19 +1445,23 @@ macro "Pomegranate"
 	waitForUser("Reconstruction complete.\nClick OK to proceed to manual ROI filtering.");
 
 	// Manual Deletion
+	setSlice(round(nSlices/2));
 	manualDelete = getBoolean("Manually delete an ROI?\nClick NO to use current ROIs for quantification");
+	oidRecord = newArray();
 	deleteList = newArray();
 	while (manualDelete)
 	{
 		selectWindow("ROI Manager");
 		roiManager("Show All With Labels");
-		
+
+		setSlice(round(nSlices/2));
 		waitForUser("Please select an ROI.\nClick OK to delete that ROI's object.");
 		if (selectionType() != -1)
 		{
 			deleteList = newArray();
 			deleteID = Roi.getProperty("Object_ID");
 			deleteType = Roi.getProperty("Data_Type");
+			oidRecord = Array.concat(oidRecord, deleteID);
 			
 			n = roiManager("Count");
 			for (i = 0; i < n; i++)
@@ -1346,18 +1479,12 @@ macro "Pomegranate"
 			roiManager("Deselect");
 			run("Select None");
 
+			setSlice(round(nSlices/2));
 			manualDelete = getBoolean("Manually delete another ROI?\nClick NO to use current ROIs for quantification");
 		}
 		else manualDelete = getBoolean("Invalid selection. Try again?\nClick NO to use current ROIs for quantification");
 	}
 	if (transpMode) waitForUser("[Transparent Mode] Manual Filter");
-
-	// Filtered ROI Export
-	showStatus("Pomegranate - Exporting Filtered ROIs");
-	print("\n[Exporting Filtered ROIs]");
-	clFile = directoryROI + replace(File.getName(imagePath),'.','_') + "_Filtered.zip";
-	if (!File.exists(clFile)) roiManager("Save", clFile);
-	print("File Created: " + clFile);
 
 	step++;  // * * *
 
@@ -1387,10 +1514,13 @@ macro "Pomegranate"
 	{
 		roiManager("Select", i);
 		getSelectionCoordinates(xpos, ypos);
+		Roi.getContainedPoints(xpc, ypc);
+		
 		ID = Roi.getProperty("Object_ID");
 		dType = Roi.getProperty("Data_Type");
 		midType = Roi.getProperty("Mid_Slice");
 		crad = Roi.getProperty("Cell_Radius");
+		pixelArea = xpc.length;
 				
 		setResult("Object_ID", i, ID);
 		if (midType) setResult("ROI_Type", i, "MID");
@@ -1401,6 +1531,13 @@ macro "Pomegranate"
 		setResult("Experiment", i, expName);
 		setResult("xpos", i, replace(String.join(xpos)," ",""));
 		setResult("ypos", i, replace(String.join(ypos)," ",""));
+		
+		setResult("voxelSize_X", i, nvx);
+		setResult("voxelSize_Y", i, nvy);
+		setResult("voxelSize_Z", i, nvz);
+		setResult("voxelSize_unit", i, unit);
+
+		setResult("Area_px", i, pixelArea);
 	}
 		
 	// Results Export
@@ -1413,6 +1550,100 @@ macro "Pomegranate"
 	step++; // * * *
 
 // [ 12 ] -----------------------------------------------------------------------------------------------------------------------------------------------
+
+	if (runMode != "NUCL")
+	{
+		// Revise Reconstruction Input based on manual selection
+		roiManager("Reset");
+		roiManager("Open", rinpFile);
+		deleteList = newArray();
+		for (i = 0; i < roiManager("Count"); i++)
+		{
+			roiManager("Select", i);
+			currentID = Roi.getProperty("Object_ID");
+			for (j = 0; j < oidRecord.length; j++)
+			{
+				if ((currentID == oidRecord[j])) deleteList = Array.concat(deleteList, i);
+			}
+		}
+		// Clear Bad ROIs
+		if (deleteList.length > 0)
+		{
+			roiManager("Select", deleteList);
+			roiManager("Delete");
+		}
+		roiManager("Deselect");
+		run("Select None");
+
+		// Filtered Reconstruction Input ROI Export
+		showStatus("Pomegranate - Exporting Whole Cell ROis");
+		print("\n[Exporting Whole Cell ROIs]");
+		frinpFile = directoryROI + replace(File.getName(imagePath),'.','_') + "_Filtered_Reconstruction_Input_Whole_Cell_ROIs.zip";
+		if (!File.exists(frinpFile)) roiManager("Save", frinpFile);
+		print("File Created: " + frinpFile);
+
+		if (runMode == "BOTH")
+		{
+			// Revise Nuclear ROIs based on manual selection
+			roiManager("Reset");
+			roiManager("Open", nucFile);
+			deleteList = newArray();
+			for (i = 0; i < roiManager("Count"); i++)
+			{
+				roiManager("Select", i);
+				currentID = Roi.getProperty("Object_ID");
+				for (j = 0; j < oidRecord.length; j++)
+				{
+					if ((currentID == oidRecord[j])) deleteList = Array.concat(deleteList, i);
+				}
+			}
+			// Clear Bad ROIs
+			if (deleteList.length > 0)
+			{
+				roiManager("Select", deleteList);
+				roiManager("Delete");
+			}
+			roiManager("Deselect");
+			run("Select None");
+	
+			// Filtered Nuclear ROI Export
+			print("\n[Exporting Nuclear ROI Files]");
+			fnucFile = directoryROI + replace(File.getName(imagePath),'.','_') + "_Filtered_Nuclear_ROIs.zip";
+			if (!File.exists(fnucFile)) roiManager("Save", fnucFile);
+			print("File Created: " + fnucFile);
+		}
+		
+		// Revise Reconstruction Output ROIs based on manual selection
+		roiManager("Reset");
+		roiManager("Open", wcFile);
+		deleteList = newArray();
+		for (i = 0; i < roiManager("Count"); i++)
+		{
+			roiManager("Select", i);
+			currentID = Roi.getProperty("Object_ID");
+			for (j = 0; j < oidRecord.length; j++)
+			{
+				if ((currentID == oidRecord[j])) deleteList = Array.concat(deleteList, i);
+			}
+		}
+		// Clear Bad ROIs
+		if (deleteList.length > 0)
+		{
+			roiManager("Select", deleteList);
+			roiManager("Delete");
+		}
+		roiManager("Deselect");
+		run("Select None");
+	
+		// Filtered Whole Cell ROI Export
+		showStatus("Pomegranate - Exporting Whole Cell ROis");
+		print("\n[Exporting Whole Cell ROIs]");
+		fwcFile = directoryROI + replace(File.getName(imagePath),'.','_') + "_Filtered_Reconstruction_Output_Whole_Cell_ROIs.zip";
+		if (!File.exists(fwcFile)) roiManager("Save", fwcFile);
+		print("File Created: " + fwcFile);
+	}
+
+// [ 13 ] -----------------------------------------------------------------------------------------------------------------------------------------------
 
 	// Runtime Check
 	print("\n[Run Performance]");
