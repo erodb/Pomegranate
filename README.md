@@ -11,7 +11,7 @@ A segmentation and reconstruction pipeline that uses a combination of bright-fie
 The associated publication for this software can be found on [PLOS One](#publication-links) and [bioRxiv](#publication-links).
 
 ## Documentation
-See XXX for all user guides, tutorials and documentation. Included here will be a quick start guide with sample images.
+See the [Documentation](https://github.com/erodb/Pomegranate/tree/master/documentation) folder for all user guides, tutorials and documentation. Included here will be a quick start guide to get Pomegranate installed through the Hauf Lab Tools macro manager. In addition, the Pomegranate User Guide will be accompanied by samples images. 
 
 ## Contact Information
 **Development and Maintenance** 
