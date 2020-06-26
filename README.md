@@ -1,5 +1,5 @@
 # Pomegranate 
-Pomegranate is a detection and 3D segmentation tool for analzying single timepoint, z-stack brightfield and fluoresence microscopy images of fission yeast or other rod-shaped cells.
+Pomegranate is a nuclear and whole-cell detection, reconstruction, and 3D segmentation tool for fission yeast.
 
 ### Table of Contents
 * [Publication Links](#publication-links)
