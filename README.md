@@ -1,5 +1,5 @@
 # Pomegranate 
-A segmentation and reconstruction pipeline that uses a combination of bright-field images, fluorescent markers, and the known morphological characteristics of fission yeast to produce a volumetric fit of a cell’s whole cell and nuclear geometry.
+Pomegranate is a detection and 3D segmentation tool for analzying single timepoint, z-stack brightfield and fluoresence microscopy images of fission yeast or other rod-shaped cells.
 
 ### Table of Contents
 * [Publication Links](#publication-links)
@@ -8,10 +8,10 @@ A segmentation and reconstruction pipeline that uses a combination of bright-fie
 * [Version History](#version-history)
 
 ## Publication Links
-The associated publication for this software can be found on [PLOS One](#publication-links) and [bioRxiv](#publication-links).
+The associated publication for this software can be found on [bioRxiv](#publication-links).
 
 ## Documentation
-See the [Documentation](https://github.com/erodb/Pomegranate/tree/master/documentation) folder for all user guides, tutorials and documentation. Included here will be a quick start guide to get Pomegranate installed through the Hauf Lab Tools macro manager. In addition, the Pomegranate User Guide will be accompanied by samples images. 
+See the [Documentation](https://github.com/erodb/Pomegranate/tree/master/documentation) folder for all user guides, tutorials and documentation. Included here are a quick start guide to get Pomegranate installed via the Hauf Lab update site. In addition, the Pomegranate User Guide will contain a link to a repository containing samples images. 
 
 ## Contact Information
 **Development and Maintenance** 
