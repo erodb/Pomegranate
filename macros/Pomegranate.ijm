@@ -106,8 +106,9 @@ macro "Pomegranate"
 		print("Experiment Name: " + expName);
 		print("Save ID: " + runID);
 		print("Generic Run ID: " + runID);
-		
-		run("Bio-Formats Importer", "open=" + imagePath + " autoscale color_mode=Composite view=Hyperstack stack_order=XYCZT");
+
+		if (endsWith(imageName,".tif")) open(imagePath); 
+		else run("Bio-Formats Importer", "open=" + imagePath + " autoscale color_mode=Composite view=Hyperstack stack_order=XYCZT");
 
 		if (isOpen(imageName)) step++; // * * *
 		else 
@@ -153,28 +154,26 @@ macro "Pomegranate"
 		{
 			Dialog.create("Channel Selection");
 				if (!segMode) Dialog.addChoice("Measurement Channel", channelList, 1);
-				if (runMode != "WLCL") Dialog.addChoice("Nuclear Marker Channel", Array.concat(channelList, "Import External Binary"), 1);
-				if (runMode != "NUCL") Dialog.addChoice("Bright-Field Channel", Array.concat(channelList, "Import External Binary"), 1);
+				if (runMode != "WLCL") Dialog.addChoice("Nuclear Marker Channel", channelList, 1);
+				if (runMode != "NUCL") Dialog.addChoice("Bright-Field Channel", channelList, 1);
 			Dialog.show();
-			chparamMS = Dialog.getChoice();
-			chparamWC = Dialog.getChoice();
-			chparamNC = Dialog.getChoice();
+			if (!segMode) chparamMS = Dialog.getChoice();
+			if (runMode != "WLCL") chparamNC = Dialog.getChoice();
+			if (runMode != "NUCL") chparamWC = Dialog.getChoice();
 				
 			if (!segMode) msChannel = parseInt(chparamMS); // Measurement Channel
 			else msChannel = -1;
 			
-			if ((runMode != "WLCL") & (chparamNC != "Import External Binary")) nmChannel = parseInt(chparamNC); // Nuclear Marker Channel
+			if (runMode != "WLCL") nmChannel = parseInt(chparamNC); // Nuclear Marker Channel
 			else nmChannel = -2;
 			
-			if ((runMode != "NUCL") & (chparamWC != "Import External Binary")) bfChannel = parseInt(chparamWC); // Bright-Field Channel
+			if (runMode != "NUCL") bfChannel = parseInt(chparamWC); // Bright-Field Channel
 			else bfChannel = -3;
 	
 			print("\n[Run Parameters]");
 			if (!segMode) print("Measurement Channel: " + msChannel);
-			if ((runMode != "WLCL") & (chparamNC != "Import External Binary")) print("Nuclear Marker Channel: " + nmChannel);
-			if ((runMode != "NUCL") & (chparamWC != "Import External Binary")) print("Bright-Field Channel: " + bfChannel);
-			if (chparamNC == "Import External Binary") print("Nuclear Analysis - Input External Binary");
-			if (chparamWC == "Import External Binary") print("Whole-Cell Analysis - Input External Binary");
+			if (runMode != "WLCL") print("Nuclear Marker Channel: " + nmChannel);
+			if (runMode != "NUCL") print("Bright-Field Channel: " + bfChannel);
 			
 			// Only Generate Folders for Valid Inputs
 			if ((nmChannel != bfChannel) && (msChannel != bfChannel) && (nmChannel != msChannel)) step++; // * * *
@@ -281,6 +280,7 @@ macro "Pomegranate"
 			if (transpMode) waitForUser("[Transparent Mode] Nuclear ROIs (Uncleaned)");
 	
 		if (!transpMode) setBatchMode(false);
+		setSlice(round(nSlices/2));
 	}
 
 	step++; // * * *
@@ -297,7 +297,7 @@ macro "Pomegranate"
 			cohesionRadiusThresh = 3.0;
 			en = 0.2;
 			mroi = 5;
-			Dialog.create("Nuclei Building Parameterrun("Analyze Particles...", "exclude clear add");s");
+			Dialog.create("Nuclei Building Parameters");
 				Dialog.addNumber("Centroid Search Radius (" + unit + ")", searchRadiusThresh);
 				Dialog.addNumber("Centroid Cohesion Radius (" + unit + ")", cohesionRadiusThresh);
 				Dialog.addNumber("Enlarge Parameter (" + unit + ")", en);
@@ -498,6 +498,7 @@ macro "Pomegranate"
 		removednuclei = badCount;
 		nnuclei = nuclearIndex;
 		Array.getStatistics(midsliceList, dumpy, dumpy, meanMidslice, dumpy);
+		meanMidslice = round(meanMidslice);
 
 		print("\n[Mean Midslice]\nSlice: " + meanMidslice);
 	
