@@ -11,7 +11,7 @@
 macro "Pomegranate"
 { 		 
 	versionFIJI = "1.53b";
-	versionPIPELINE = "1.2";
+	versionPIPELINE = "1.2a";
 
 	requires(versionFIJI);
 	
@@ -30,7 +30,7 @@ macro "Pomegranate"
 	// Runtime
 	sTime = getTime(); 
 
-	waitForUser("This macro performs a prerun clean up\nThis will close all currently open images without saving\nClick OK to Continue");
+	showMessageWithCancel("Prerun Cleanup","This macro performs a prerun clean up\nThis will close all currently open images without saving\nClick OK to Continue");
 	cleanAll();
 	
 	step = 0; // Progress Ticker
