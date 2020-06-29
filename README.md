@@ -42,3 +42,7 @@ See the [Documentation](https://github.com/erodb/Pomegranate/tree/master/documen
 **Version 1.2** 
 * Revision to reanalysis pipeline, ROIs are now saved in such a way that manual exclusions can be optionally undone during reanalysis.
 * First public release of Pomegranate.
+
+**Version 1.2a** 
+* Minor bug fixes
+* Ability to abort analysis before prerun cleanup.
