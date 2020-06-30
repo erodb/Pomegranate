@@ -4,7 +4,7 @@ macro "Pomegranate Analysis Revision Tool"
 	requires(versionFIJI);
 
 	// Title Pop Up
-	showMessageWithCancel("Pomegranate Analysis Revision Tool", "<html>"
+	showMessage("Pomegranate Analysis Revision Tool", "<html>"
 	+"<font size=+3><center><b>Pomegranate</b><br></center>"
 	+"<font size=+1><center><b>Analysis Revision Tool</b><br></center>"
 	+"<br>"
@@ -16,9 +16,9 @@ macro "Pomegranate Analysis Revision Tool"
 	+"<font size=-2><center>Please read accompanying documentation</b></center>"
 	+"<font size=-2><center>[Erod Keaton Baybay - erodb@vt.edu]</b></center>");
 
-	waitForUser("This macro performs a prerun clean up\nThis will close all currently open images without saving\nClick OK to Continue");
+	showMessageWithCancel("Prerun Cleanup","This macro performs a prerun clean up\nThis will close all currently open images without saving\nClick OK to Continue");
 	cleanAll();
-
+	
 	roiManager("Associate", "true");
 	roiManager("UseNames", "true");
 	run("Options...", "iterations=1 count=1 black do=Nothing");
@@ -371,6 +371,7 @@ macro "Pomegranate Analysis Revision Tool"
 				for (j = 0; j < wcxPoints.length; j++) distMapValues[j] = getPixel(wcxPoints[j], wcyPoints[j]);
 			
 				selectImage("Canvas");
+				getVoxelSize(vx, vy, vz, unit);
 				for (k = 1; k <= nSlices; k++)
 				{
 					for (j = 0; j < wcxPoints.length; j++) 
@@ -391,10 +392,6 @@ macro "Pomegranate Analysis Revision Tool"
 					// Apply to Canvas and ROI Manager
 					if (selectionType() != -1)
 					{
-						// ROI Smoothing
-						run("Enlarge...", "enlarge=15 pixel");
-						run("Enlarge...", "enlarge=-15 pixel");
-			
 						Roi.setProperty("Object_ID", ID);
 						Roi.setProperty("ROI_Color", currentColor);
 						Roi.setStrokeColor(currentColor);

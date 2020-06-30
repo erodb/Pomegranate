@@ -1,5 +1,30 @@
 macro "Cell Viewer"
 {
+	versionFIJI = "1.53b";
+	requires(versionFIJI);
+
+	// Title Pop Up
+	showMessage("Pomegranate Cell Isolator Tool", "<html>"
+	+"<font size=+3><center><b>Pomegranate</b><br></center>"
+	+"<font size=+1><center><b>Cell Isolator Tool</b><br></center>"
+	+"<br>"
+	+"<font size=-2><center><b>Virginia Polytechnic Institute and State University</b></center>"
+	+"<font size=-2><center><b>Department of Biological Sciences - Hauf Lab</b></center>"
+	+"<ul>"
+	+"<li><font size=-2>FIJI Version Required: " + versionFIJI
+	+"</ul>"
+	+"<font size=-2><center>Please read accompanying documentation</b></center>"
+	+"<font size=-2><center>[Erod Keaton Baybay - erodb@vt.edu]</b></center>");
+
+	// Designate Input Image
+	Dialog.create("Input Image");
+		Dialog.addChoice("Input Method", newArray("Select Image from Directory","Manually Enter Path"));
+	Dialog.show();
+	if (Dialog.getChoice() == "Select Image from Directory") imagePath = File.openDialog("Choose an Input  File"); 
+	else imagePath = getString("Image Path", "/Users/hauflab/Documents");
+
+	open(imagePath);
+
 	call("ij3d.ImageJ3DViewer.close");
 	getVoxelSize(vxy, vxy, vz, unit);
 	original = getTitle();
