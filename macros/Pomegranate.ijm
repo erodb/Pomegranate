@@ -18,7 +18,7 @@ macro "Pomegranate"
 	// Title Pop Up
 	showMessage("Pomegranate " + versionPIPELINE, "<html>"
 	  		+"<font size=+3><center><b>Pomegranate</b><br></center>"
-	  		+"<font size=-2><center><b>Virginia Polytechnic Institute and State University</b></center>"
+	  		+"<font size=-2><center><b>Virginia Tech, Blacksburg, Virginia</b></center>"
 	  		+"<font size=-2><center><b>Department of Biological Sciences - Hauf Lab</b></center>"
 	  		+"<ul>"
 	  		+"<li><font size=-2>Pipeline Version: " + versionPIPELINE

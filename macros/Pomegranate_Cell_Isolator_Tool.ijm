@@ -8,13 +8,16 @@ macro "Cell Viewer"
 	+"<font size=+3><center><b>Pomegranate</b><br></center>"
 	+"<font size=+1><center><b>Cell Isolator Tool</b><br></center>"
 	+"<br>"
-	+"<font size=-2><center><b>Virginia Polytechnic Institute and State University</b></center>"
+	+"<font size=-2><center><b>Virginia Tech, Blacksburg, Virginia</b></center>"
 	+"<font size=-2><center><b>Department of Biological Sciences - Hauf Lab</b></center>"
 	+"<ul>"
 	+"<li><font size=-2>FIJI Version Required: " + versionFIJI
 	+"</ul>"
 	+"<font size=-2><center>Please read accompanying documentation</b></center>"
 	+"<font size=-2><center>[Erod Keaton Baybay - erodb@vt.edu]</b></center>");
+
+	showMessageWithCancel("Prerun Cleanup","This macro performs a prerun clean up\nThis will close all currently open images without saving\nClick OK to Continue");
+	cleanAll();
 
 	// Designate Input Image
 	Dialog.create("Input Image");
