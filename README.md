@@ -11,7 +11,7 @@ Pomegranate is a nuclear and whole-cell detection, reconstruction, and 3D segmen
 The associated publication for this software can be found on [bioRxiv](#publication-links).
 
 ## Documentation
-See the [Documentation](https://github.com/erodb/Pomegranate/tree/master/documentation) folder for all user guides, tutorials and documentation. Included here are a quick start guide to get Pomegranate installed via the Hauf Lab update site, as well as the accompanying Pomegranate Documentation. In addition, the Pomegranate User Guide will contain a link to a repository containing samples images. 
+See the [Documentation](https://github.com/erodb/Pomegranate/tree/master/documentation) folder for all user guides, tutorials and documentation. Included here are a quick start guide to get Pomegranate installed via the Hauf Lab update site, as well as the accompanying Pomegranate User Guide. The Pomegranate User Guide will contain a link to a repository containing samples images and outputs. 
 
 ## Contact Information
 **Development and Maintenance** 
