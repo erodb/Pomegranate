@@ -34,7 +34,7 @@ See the [Documentation](https://github.com/erodb/Pomegranate/tree/master/documen
   * The cohesion radius describes the smallest circle that can contain all centroids - centered at the mean position of the centroids. It can also be represented as the largest distance between the mean centroid and any single centroid.
 
 **Version 1.0d** 
-* Added 'segmentation only' option - removing the requirement for a channel with intensity images.
+* Added 'Segmentation Only' option - removing the requirement for a channel with flourescent microscopy images.
 
 **Version 1.1** 
 * Complete overhaul of reconstruction method. Reconstruction now compensates for nonuniform radii in cells.
@@ -44,10 +44,11 @@ See the [Documentation](https://github.com/erodb/Pomegranate/tree/master/documen
 * First public release of Pomegranate.
 
 **Version 1.2a** 
-* Minor bug fixes
+* Minor bug fixes.
 * Ability to abort analysis before prerun cleanup.
 
 **Version 1.2b** 
-* Minor bug fixes
+* Minor bug fixes.
 * Reformated image input methods, added new image input method: Multiple Single-Channel images.
+* Renamed the 'Segmentation Only' Run parameter to 'Ignore Measurement Channel'.
 * Repaired issues with binary image input.
