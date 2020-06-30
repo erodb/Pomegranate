@@ -11,7 +11,7 @@
 macro "Pomegranate"
 { 		 
 	versionFIJI = "1.53b";
-	versionPIPELINE = "1.2b";
+	versionPIPELINE = "1.2c";
 
 	requires(versionFIJI);
 	
@@ -593,7 +593,7 @@ macro "Pomegranate"
 		Array.getStatistics(midsliceList, dumpy, dumpy, meanMidslice, dumpy);
 		meanMidslice = round(meanMidslice);
 
-		print("\n[Mean Midslice]\nSlice: " + meanMidslice);
+		print("\n[Mean Midplane]\nSlice: " + meanMidslice);
 	
 		// Nuclear ROI Export
 		print("\n[Exporting Nuclear ROI Files]");
@@ -693,7 +693,7 @@ macro "Pomegranate"
 		{
 			showStatus("Pomegranate - Generating Whole Cell Binary");
 			selectImage(bfChannel);
-			if (transpMode) waitForUser("[Transparent Mode] Input Brightfield");
+			if (transpMode) waitForUser("[Transparent Mode] Input Bright-field");
 			
 			run("32-bit");
 			run("Reciprocal", "stack");
@@ -709,7 +709,7 @@ macro "Pomegranate"
 			{
 				selectImage(bfChannel);
 				setSlice(meanMidslice);
-				waitForUser("Suggested Mid Slice: " + meanMidslice + "\nPlease Select a Mid Slice");
+				waitForUser("Suggested Midplane: " + meanMidslice + "\nPlease Select a Midplane");
 				midslice = getSliceNumber();
 			}
 	
