@@ -46,3 +46,8 @@ See the [Documentation](https://github.com/erodb/Pomegranate/tree/master/documen
 **Version 1.2a** 
 * Minor bug fixes
 * Ability to abort analysis before prerun cleanup.
+
+**Version 1.2b** 
+* Minor bug fixes
+* Reformated image input methods, added new image input method: Multiple Single-Channel images.
+* Repaired issues with binary image input.
