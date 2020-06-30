@@ -52,3 +52,7 @@ See the [Documentation](https://github.com/erodb/Pomegranate/tree/master/documen
 * Reformated image input methods, added new image input method: Multiple Single-Channel images.
 * Renamed the 'Segmentation Only' Run parameter to 'Ignore Measurement Channel'.
 * Repaired issues with binary image input.
+
+**Version 1.2c** 
+* Minor bug fixes.
+* Repaired Pomegranate Analysis Extention Tool.
