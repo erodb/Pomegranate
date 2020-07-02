@@ -56,3 +56,6 @@ See the [Documentation](https://github.com/erodb/Pomegranate/tree/master/documen
 **Version 1.2c** 
 * Minor bug fixes.
 * Repaired Pomegranate Analysis Extention Tool.
+
+**Version 1.2d** 
+* Repaired Pomegranate Analysis Revision Tool.
