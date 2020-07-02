@@ -11,7 +11,7 @@
 macro "Pomegranate"
 { 		 
 	versionFIJI = "1.53b";
-	versionPIPELINE = "1.2c";
+	versionPIPELINE = "1.2d";
 
 	requires(versionFIJI);
 	

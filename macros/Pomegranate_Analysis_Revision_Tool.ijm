@@ -28,20 +28,6 @@ macro "Pomegranate Analysis Revision Tool"
 
 // -----------------------------------------------------------------------------------------------------------------------------------------------
 
-	// Designate Input Image
-	Dialog.create("Input Image");
-		Dialog.addChoice("Input Method", newArray("Select Image from Directory","Manually Enter Path"));
-	Dialog.show();
-	if (Dialog.getChoice() == "Select Image from Directory") imagePath = File.openDialog("Choose an Input  File"); 
-	else imagePath = getString("Image Path", "/Users/hauflab/Documents");
-
-	imageName = File.getName(imagePath);
-
-	// Save IDs
-	getDateAndTime(year, month, dayOfWeek, dayOfMonth, hour, minute, second, msec);
-	saveID = "" + year + "" + month + "" + dayOfMonth + "_" + hour + "" + minute + "_" + imageName;
-	runID = "OID" + (year - 2000) + "" + month + "" + dayOfMonth + "" + hour + "" + minute;
-
 	// Designate Existing Output File
 	Dialog.create("Existing Results File");
 		Dialog.addChoice("Input Method", newArray("Select Existing Output File from Directory","Manually Enter Path"));
@@ -75,12 +61,8 @@ macro "Pomegranate Analysis Revision Tool"
 			if (endsWith(roiList[i], "_Filtered_Reconstruction_Output_Whole_Cell_ROIs.zip")) foutput = roiList[i];
 		}
 
-	// Set Experiment Name and Open image
-	expName = getString("Experiment Name", imageName);
-	run("Bio-Formats Importer", "open=" + imagePath + " autoscale color_mode=Composite view=Hyperstack stack_order=XYCZT");
 
-	// Run Mode Detection
-	
+	// Run Mode Detection	
 	if ((unuclei != -1) & (fnuclei != -1) & (uinput != -1) & (finput != -1) & (uoutput != -1) & (foutput != -1)) 
 	{
 		runMode = "BOTH";
@@ -105,13 +87,226 @@ macro "Pomegranate Analysis Revision Tool"
 
 	transpMode = false;
 	segMode = false;
+	importModeList = newArray("Single Multi-Channel Image", "Multiple Single-Channel Images");
 	Dialog.create("Pomegranate Run Parameters");
 		Dialog.addMessage(runModeText);
-		Dialog.addCheckbox("Segmentation Only", segMode);
+		Dialog.addChoice("Import Type", importModeList);
+		Dialog.addCheckbox("Ignore Measurement Channel", segMode);
 		Dialog.addCheckbox("Transparent Mode", transpMode);
-	Dialog.show()
+	Dialog.show();
+	importMode = Dialog.getChoice();
 	segMode = Dialog.getCheckbox();
 	transpMode = Dialog.getCheckbox();
+
+	if (importMode == importModeList[0]) importMode = "MERGED";
+	else if (importMode == importModeList[1]) importMode = "UNMERGED";
+
+// -----------------------------------------------------------------------------------------------------------------------------------------------
+
+	// Designate Input Image
+	if (importMode == "MERGED")
+	{
+		// Designate Input Image
+		Dialog.create("Input Image");
+			Dialog.addChoice("Input Method", newArray("Select Image from Directory","Manually Enter Path"));
+		Dialog.show();
+		if (Dialog.getChoice() == "Select Image from Directory") imagePath = File.openDialog("Choose an Input  File"); 
+		else imagePath = getString("Image Path", "/Users/hauflab/Documents");
+
+		imageName = File.getName(imagePath);
+
+		if (endsWith(imageName,".tif")) open(imagePath); 
+		else run("Bio-Formats Importer", "open=" + imagePath + " autoscale color_mode=Composite view=Hyperstack stack_order=XYCZT");
+
+		if (!isOpen(imageName)) 
+		{
+			showMessageWithCancel("Pomegranate Error", "Error: Unable to Open Image\nResponse: Ending Analysis");
+			cleanAll();
+			exit();
+		}
+	
+		// Get Image Dimensions
+		getDimensions(width, height, channels, slices, frames);
+		getVoxelSize(vx, vy, vz, unit);
+
+		// Quick Check
+		getVoxelSize(vx, vy, vz, unit);
+		print("Voxel Size: " + vx + " " + unit + ", " + vy + " " + unit + ", " + vz + " " + unit);
+		if (channels > 1)
+		{
+			channelList = newArray(channels);
+			for (i = 1; i <= channels; i++) channelList[i-1] = "" + i;
+			
+			// Assign Channels
+			channelHold = true;
+			while (channelHold)
+			{
+				Dialog.create("Channel Selection");
+					if (!segMode) Dialog.addChoice("Measurement Channel", channelList, 1);
+					if (runMode != "WLCL") Dialog.addChoice("Nuclear Marker Channel", channelList, 1);
+					if (runMode != "NUCL") Dialog.addChoice("Bright-Field Channel", channelList, 1);
+				Dialog.show();
+				if (!segMode) chparamMS = Dialog.getChoice();
+				if (runMode != "WLCL") chparamNC = Dialog.getChoice();
+				if (runMode != "NUCL") chparamWC = Dialog.getChoice();
+						
+				if (!segMode) msChannel = parseInt(chparamMS); // Measurement Channel
+				else msChannel = -1;
+				
+				if (runMode != "WLCL") nmChannel = parseInt(chparamNC); // Nuclear Marker Channel
+				else nmChannel = -2;
+				
+				if (runMode != "NUCL") bfChannel = parseInt(chparamWC); // Bright-Field Channel
+				else bfChannel = -3;
+			
+				print("\n[Run Parameters]");
+				if (!segMode) print("Measurement Channel: " + msChannel);
+				if (runMode != "WLCL") print("Nuclear Marker Channel: " + nmChannel);
+				if (runMode != "NUCL") print("Bright-Field Channel: " + bfChannel);
+					
+				// Only Generate Folders for Valid Inputs
+				if ((nmChannel != bfChannel) && (msChannel != bfChannel) && (nmChannel != msChannel)) channelHold = false; // * * *
+				else showMessageWithCancel("Pomegranate Error", "Error: Invalid Channel Selection\nResponse: Returning to Channel Selection");
+			}
+		}
+		else if ((channels < 2) && (runMode == "BOTH")) 
+		{
+			showMessageWithCancel("Pomegranate Error", "Error: Insufficient Channels for Analysis\nResponse: Ending Analysis");
+			cleanAll();
+			exit();
+		}
+		else if ((channels < 2) && (!segMode)) 
+		{
+			showMessageWithCancel("Pomegranate Error", "Error: Insufficient Channels for Analysis\nResponse: Ending Analysis");
+			cleanAll();
+			exit();
+		}
+			
+		run("Split Channels");	
+		if (!segMode) msChannel = "C"+msChannel+"-"+imageName;
+		if (runMode != "WLCL") nmChannel = "C"+nmChannel+"-"+imageName;
+		if (runMode != "NUCL") bfChannel = "C"+bfChannel+"-"+imageName;
+	}
+	else if (importMode == "UNMERGED")
+	{
+		// Measurement Channel Import
+		if (!segMode) 
+		{
+			Dialog.create("Input Image");
+				Dialog.addMessage("Measurement Signal Input Image (Measurement Channel)");
+				Dialog.addChoice("Input Method", newArray("Select Image from Directory","Manually Enter Path"));
+			Dialog.show();
+			if (Dialog.getChoice() == "Select Image from Directory") imagePath = File.openDialog("Choose an Input  File"); 
+			else imagePath = getString("Image Path", "/Users/hauflab/Documents");
+			imageName = File.getName(imagePath);
+	
+			if (endsWith(imageName,".tif")) open(imagePath); 
+			else run("Bio-Formats Importer", "open=" + imagePath + " autoscale color_mode=Composite view=Hyperstack stack_order=XYCZT");
+
+			// Check if Open
+			if (!isOpen(imageName))
+			{
+				showMessageWithCancel("Pomegranate Error", "Error: Unable to Open Image\nResponse: Ending Analysis");
+				cleanAll();
+				exit();
+			}
+			msChannel = getTitle();
+		}
+		// Nuclear Image Import
+		if (runMode != "WLCL")
+		{
+			Dialog.create("Input Image");
+				Dialog.addMessage("Nuclear Analysis Input Image (Nuclear Marker Channel)");
+				Dialog.addChoice("Input Method", newArray("Select Image from Directory","Manually Enter Path"));
+			Dialog.show();
+			if (Dialog.getChoice() == "Select Image from Directory") imagePath = File.openDialog("Choose an Input  File"); 
+			else imagePath = getString("Image Path", "/Users/hauflab/Documents");
+			imageName = File.getName(imagePath);
+	
+			if (endsWith(imageName,".tif")) open(imagePath); 
+			else run("Bio-Formats Importer", "open=" + imagePath + " autoscale color_mode=Composite view=Hyperstack stack_order=XYCZT");
+
+			// Check if Open
+			if (!isOpen(imageName))
+			{
+				showMessageWithCancel("Pomegranate Error", "Error: Unable to Open Image\nResponse: Ending Analysis");
+				cleanAll();
+				exit();
+			}
+			nmChannel = getTitle();
+		}
+		// Bright-Field Import
+		if (runMode != "NUCL")
+		{
+			Dialog.create("Input Image");
+				Dialog.addMessage("Whole-Cell Analysis Input Image (Bright-field Channel)");
+				Dialog.addChoice("Input Method", newArray("Select Image from Directory","Manually Enter Path"));
+			Dialog.show();
+			if (Dialog.getChoice() == "Select Image from Directory") imagePath = File.openDialog("Choose an Input  File"); 
+			else imagePath = getString("Image Path", "/Users/hauflab/Documents");
+			imageName = File.getName(imagePath);
+	
+			if (endsWith(imageName,".tif")) open(imagePath); 
+			else run("Bio-Formats Importer", "open=" + imagePath + " autoscale color_mode=Composite view=Hyperstack stack_order=XYCZT");
+
+			// Check if Open
+			if (!isOpen(imageName))
+			{
+				showMessageWithCancel("Pomegranate Error", "Error: Unable to Open Image\nResponse: Ending Analysis");
+				cleanAll();
+				exit();
+			}
+			bfChannel = getTitle();
+		}
+
+		if (!segMode) selectImage(msChannel);
+		else if (runMode == "NUCL") selectImage(nmChannel);
+		else if (runMode == "WLCL") selectImage(bfChannel);
+		else if (runMode == "BOTH") selectImage(bfChannel);
+			
+		// Get Image Dimensions
+		getDimensions(width, height, channels, slices, frames);
+		getVoxelSize(vx, vy, vz, unit);
+
+		// Quick Check
+		getVoxelSize(vx, vy, vz, unit);
+		print("Voxel Size: " + vx + " " + unit + ", " + vy + " " + unit + ", " + vz + " " + unit);
+
+	}
+
+	// Save IDs
+	getDateAndTime(year, month, dayOfWeek, dayOfMonth, hour, minute, second, msec);
+	saveID = "" + year + "" + month + "" + dayOfMonth + "_" + hour + "" + minute + "_" + imageName;
+	runID = "OID" + (year - 2000) + "" + month + "" + dayOfMonth + "" + hour + "" + minute;
+
+	// Voxel Size Management
+	Dialog.create("Voxel Size Management");
+		Dialog.addNumber("Voxel Width (" + unit + ")", 0.1071);
+		Dialog.addNumber("Voxel Height (" + unit + ")", 0.1071);
+		Dialog.addNumber("Voxel Depth (" + unit + ")", 0.0659);
+	Dialog.show();
+	nvx = Dialog.getNumber();
+	nvy = Dialog.getNumber();
+	nvz = Dialog.getNumber();
+
+	if (!segMode) 
+	{
+		selectImage(msChannel);
+		setVoxelSize(nvx, nvy, nvz, unit);
+	}
+	if (runMode != "WLCL")
+	{
+		selectImage(nmChannel);
+		setVoxelSize(nvx, nvy, nvz, unit);
+	}
+	if (runMode != "NUCL")
+	{
+		selectImage(bfChannel);
+		setVoxelSize(nvx, nvy, nvz, unit);
+	}
+
+	// Set Experiment Name
+	expName = getString("Experiment Name", imageName);
 
 	// Designate Output Directory
 	Dialog.create("Output Directory");
@@ -119,81 +314,6 @@ macro "Pomegranate Analysis Revision Tool"
 	Dialog.show();
 	if (Dialog.getChoice() == "Select Output Directory") outputPath = getDirectory("Select Output Directory"); 
 	else outputPath = getString("Output Path", "/Users/hauflab/Documents");	
-
-	if (!isOpen(imageName))
-	{
-		showMessageWithCancel("Pomegranate Error", "Error: Unable to Open Image\nResponse: Ending Analysis");
-		cleanAll();
-		exit();
-	}
-
-	// Get Image Dimensions
-	getDimensions(width, height, channels, slices, frames);
-	getVoxelSize(vx, vy, vz, unit);
-
-	// Voxel Size Management
-	Dialog.create("Voxel Size Management");
-		Dialog.addNumber("Voxel Width (" + unit + ")", vx);
-		Dialog.addNumber("Voxel Height (" + unit + ")", vy);
-		Dialog.addNumber("Voxel Depth (" + unit + ")", vz);
-	Dialog.show();
-	nvx = Dialog.getNumber();
-	nvy = Dialog.getNumber();
-	nvz = Dialog.getNumber();
-
-	selectImage(imageName);
-	setVoxelSize(nvx, nvy, nvz, unit);
-
-	// Quick Check
-	getVoxelSize(vx, vy, vz, unit);
-	print("Voxel Size: " + vx + " " + unit + ", " + vy + " " + unit + ", " + vz + " " + unit);
-	
-	if (channels > 1)
-	{
-		channelList = newArray(channels);
-		for (i = 1; i <= channels; i++) channelList[i-1] = "" + i;
-
-		assignChannelLock = true;
-		
-		// Assign Channels
-		while (assignChannelLock)
-		{
-			Dialog.create("Channel Selection");
-				if (!segMode) Dialog.addChoice("Measurement Channel", channelList, 1);
-				if (runMode != "WLCL") Dialog.addChoice("Nuclear Marker Channel", channelList, 1);
-				if (runMode != "NUCL") Dialog.addChoice("Bright-Field Channel", channelList, 1);
-			Dialog.show();	
-			if (!segMode) msChannel = parseInt(Dialog.getChoice()); // Measurement Channel
-			if (runMode != "WLCL") nmChannel = parseInt(Dialog.getChoice()); // Nuclear Marker Channel
-			if (runMode != "NUCL") bfChannel = parseInt(Dialog.getChoice()); // Bright-Field Channel
-	
-			print("\n[Run Parameters]");
-			if (!segMode) print("Measurement Channel: " + msChannel);
-			if (runMode != "WLCL") print("Nuclear Marker Channel: " + nmChannel);
-			if (runMode != "NUCL") print("Bright-Field Channel: " + bfChannel);
-	
-			// Defaulting Omitted Variables
-			if (segMode) msChannel = -1;
-			if (runMode == "WLCL") nmChannel = -2;
-			if (runMode == "NUCL") bfChannel = -3;
-
-			// Only Generate Folders for Valid Inputs
-			if ((nmChannel != bfChannel) && (msChannel != bfChannel) && (nmChannel != msChannel)) assignChannelLock = false; // * * *
-			else showMessageWithCancel("Pomegranate Error", "Error: Invalid Channel Selection\nResponse: Returning to Channel Selection");
-		}
-	}
-	else if ((channels < 2) && (runMode == "BOTH")) 
-	{
-		showMessageWithCancel("Pomegranate Error", "Error: Insufficient Channels for Analysis\nResponse: Ending Analysis");
-		cleanAll();
-		exit();
-	}
-	else if ((channels < 2) && (!segMode)) 
-	{
-		showMessageWithCancel("Pomegranate Error", "Error: Insufficient Channels for Analysis\nResponse: Ending Analysis");
-		cleanAll();
-		exit();
-	}
 
 // -----------------------------------------------------------------------------------------------------------------------------------------------
 
@@ -212,19 +332,6 @@ macro "Pomegranate Analysis Revision Tool"
 		// Binary Directory
 		directoryBinary = directoryMain + "Binaries/";
 		if (!File.exists(directoryBinary)) File.makeDirectory(directoryBinary);
-
-	if (channels > 1)
-	{
-		run("Split Channels");	
-		if (!segMode) msChannel = "C"+msChannel+"-"+imageName;
-		if (runMode != "WLCL") nmChannel = "C"+nmChannel+"-"+imageName;
-		if (runMode != "NUCL") bfChannel = "C"+bfChannel+"-"+imageName;
-	}
-	else
-	{
-		if (runMode != "WLCL") nmChannel = imageName;
-		if (runMode != "NUCL") bfChannel = imageName;
-	}
 
 // -----------------------------------------------------------------------------------------------------------------------------------------------
 
