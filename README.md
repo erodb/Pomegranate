@@ -49,8 +49,8 @@ See the [Documentation](https://github.com/erodb/Pomegranate/tree/master/documen
 
 **Version 1.2b** 
 * Minor bug fixes.
-* Reformated image input methods, added new image input method: Multiple Single-Channel images.
-* Renamed the 'Segmentation Only' Run parameter to 'Ignore Measurement Channel'.
+* Reformated image input methods, added new image input method: Multiple Single-Channel images for core Pomegranate.
+* Renamed the 'Segmentation Only' Run parameter to 'Ignore Measurement Channel' in core Pomegranate.
 * Repaired issues with binary image input.
 
 **Version 1.2c** 
@@ -58,4 +58,8 @@ See the [Documentation](https://github.com/erodb/Pomegranate/tree/master/documen
 * Repaired Pomegranate Analysis Extention Tool.
 
 **Version 1.2d** 
-* Repaired Pomegranate Analysis Revision Tool.
+* eformated image input methods, added new image input method: Multiple Single-Channel images for Analysis Revision Tool.
+* Renamed the 'Segmentation Only' Run parameter to 'Ignore Measurement Channel' in the Analysis Revision Tool.
+
+**Version 1.2e** 
+* Added position and voxel size columns to Pomegranate Analysis Extension Tool.
