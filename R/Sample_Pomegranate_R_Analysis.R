@@ -388,12 +388,12 @@ ggarrange(plot.SurfaceArea.Feret.N, plot.SurfaceArea.Ellipsoid.N, plot.SurfaceAr
 plot.Signal.WC <- ggRegPlot(filter(data.Full.Summary.Paired, Data_Type == "Whole_Cell"), 
                     xparam = filter(data.Full.Summary.Paired, Data_Type == "Whole_Cell")$Volume_microns3, 
                     yparam = filter(data.Full.Summary.Paired, Data_Type == "Whole_Cell")$Intensity_per_Vol) + 
-  labs(x = bquote("Cell Volume"~("µm"^3)), y = "Signal Concentration (a.u.)")
+  labs(x = bquote("Cell Volume"~("Âµm"^3)), y = "Signal Concentration (a.u.)")
 
 plot.Signal.N <- ggRegPlot(filter(data.Full.Summary.Paired, Data_Type == "Nucleus"), 
                             xparam = filter(data.Full.Summary.Paired, Data_Type == "Nucleus")$Volume_microns3, 
                             yparam = filter(data.Full.Summary.Paired, Data_Type == "Nucleus")$Intensity_per_Vol) + 
-  labs(x = bquote("Nuclear Volume"~("µm"^3)), y = "Signal Concentration (a.u.)")
+  labs(x = bquote("Nuclear Volume"~("Âµm"^3)), y = "Signal Concentration (a.u.)")
 
 ggarrange(plot.Signal.N, plot.Signal.WC,
           ncol = 2, nrow = 1)
