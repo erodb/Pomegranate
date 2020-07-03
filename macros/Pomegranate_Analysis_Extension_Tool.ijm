@@ -79,7 +79,7 @@ macro "Pomegranate Width Analysis Tool" {
 			for (i = 0; i < roiList.length; i++) if (endsWith(roiList[i],"_Filtered_Reconstruction_Output_Whole_Cell_ROIs.zip")) 
 			{
 				roiPath = directoryROIs + "/" + roiList[i];
-				imageName = replace(roiList[i],"_Filtered_Reconstruction_Output_Whole_Cell_ROIs.zip",".tif");
+				imageName = rsFileExt(replace(roiList[i],"_Filtered_Reconstruction_Output_Whole_Cell_ROIs.zip",""));
 			}
 			roiManager("Open", roiPath);
 		
@@ -200,3 +200,14 @@ function cleanAll()
 	roiManager("Reset");
 	print("\\Clear");
 } 
+
+// Restore File extension - Undoes replace(File.getName(x),".","_")
+function rsFileExt(string)
+{
+	arr = split(string, "_");
+	arrNoExt = Array.deleteIndex(arr, arr.length - 1);
+	extension = arr[arr.length - 1];
+	stringNoExt = String.join(arrNoExt,"_");
+	output = stringNoExt + "." + extension;
+	return output;
+}

@@ -11,7 +11,7 @@
 macro "Pomegranate"
 { 		 
 	versionFIJI = "1.53b";
-	versionPIPELINE = "1.2e";
+	versionPIPELINE = "1.2f";
 
 	requires(versionFIJI);
 	
@@ -297,7 +297,7 @@ macro "Pomegranate"
 
 		// Save IDs
 		getDateAndTime(year, month, dayOfWeek, dayOfMonth, hour, minute, second, msec);
-		saveID = "" + year + "" + month + "" + dayOfMonth + "_" + hour + "" + minute + "_" + imageName;
+		saveID = "" + year + "" + month + "" + dayOfMonth + "_" + hour + "" + minute + "_" + replace(imageName,".","_");
 		runID = "OID" + (year - 2000) + "" + month + "" + dayOfMonth + "" + hour + "" + minute;
 
 		print("\n[Experiment Information]");
@@ -308,7 +308,7 @@ macro "Pomegranate"
 		run("Options...", "iterations=1 count=1 black do=Nothing");
 
 		// Output Directory
-		directoryMain = outputPath + saveID+"/";
+		directoryMain = outputPath + saveID + "/";
 		if (!File.exists(directoryMain)) File.makeDirectory(directoryMain);
 			
 			// ROI Directory
