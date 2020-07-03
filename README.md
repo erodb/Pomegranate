@@ -63,3 +63,7 @@ See the [Documentation](https://github.com/erodb/Pomegranate/tree/master/documen
 
 **Version 1.2e** 
 * Added position and voxel size columns to Pomegranate Analysis Extension Tool.
+
+**Version 1.2f** 
+* Made image name format consistent betwen Pomegranate core output, and Pomegranate analysis extension output.
+* Sample R code added to R folder.
