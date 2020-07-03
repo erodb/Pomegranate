@@ -64,6 +64,7 @@ macro "Pomegranate Width Analysis Tool" {
 		if (File.exists(directoryMain + "/Binaries/Whole_Cell_RGB.tif"))
 		{
 			open(directoryMain + "/Binaries/Whole_Cell_RGB.tif");
+			getVoxelSize(vx, vy, vz, unit);
 		
 			run("8-bit");
 			setThreshold(1, 255);
@@ -87,7 +88,7 @@ macro "Pomegranate Width Analysis Tool" {
 			{
 				// Table Headers
 				print("\\Clear");
-				print("Image,Object_ID,Type,Radius");
+				print("Image,Object_ID,Type,Radius,X,Y,voxelSize_X,voxelSize_Y,voxelSize_Z,voxelSize_unit");
 
 				// Quantify Widths
 				selectImage(binary);
@@ -139,7 +140,7 @@ macro "Pomegranate Width Analysis Tool" {
 						for (j = 0; j < rxp.length; j++) 
 						{
 							I = getPixel(rxp[j], ryp[j]);
-							if (I != 0) print(imageName + "," + Roi.getProperty("Object_ID") + ",Body," + I);
+							if (I != 0) print(imageName + "," + Roi.getProperty("Object_ID") + ",Body," + I + "," + rxp[j] + "," + ryp[j] + "," + vx + "," + vy + "," + vz + "," + unit);
 						}
 	
 						selectImage("Merge_Tips");
@@ -148,7 +149,7 @@ macro "Pomegranate Width Analysis Tool" {
 						for (j = 0; j < rxp.length; j++) 
 						{
 							I = getPixel(rxp[j], ryp[j]);
-							if (I != 0) print(imageName + "," + Roi.getProperty("Object_ID") + ",Tip," + I);
+							if (I != 0) print(imageName + "," + Roi.getProperty("Object_ID") + ",Tip," + I + "," + rxp[j] + "," + ryp[j] + "," + vx + "," + vy + "," + vz + "," + unit);
 						}
 	
 						// Cleanup
