@@ -58,7 +58,7 @@ See the [Documentation](https://github.com/erodb/Pomegranate/tree/master/documen
 * Repaired Pomegranate Analysis Extention Tool.
 
 **Version 1.2d** 
-* eformated image input methods, added new image input method: Multiple Single-Channel images for Analysis Revision Tool.
+* Reformated image input methods, added new image input method: Multiple Single-Channel images for Analysis Revision Tool.
 * Renamed the 'Segmentation Only' Run parameter to 'Ignore Measurement Channel' in the Analysis Revision Tool.
 
 **Version 1.2e** 
