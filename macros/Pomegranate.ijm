@@ -5,7 +5,7 @@
  *  Hauf Lab
  *  
  *  Erod Keaton D. Baybay (2019) - erodb@vt.edu
- *  Last Updated: June 29, 2020
+ *  Last Updated: July 6, 2020
  */
 
 macro "Pomegranate"
