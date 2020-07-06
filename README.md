@@ -67,3 +67,6 @@ See the [Documentation](https://github.com/erodb/Pomegranate/tree/master/documen
 **Version 1.2f** 
 * Made image name format consistent betwen Pomegranate core output, and Pomegranate analysis extension output.
 * Sample R code added to R folder.
+
+**Version 1.2g** 
+* Fixed a bug that led to erroneous result file outputs for 2D binary whole cell inputs.
