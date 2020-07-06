@@ -11,7 +11,7 @@
 macro "Pomegranate"
 { 		 
 	versionFIJI = "1.53b";
-	versionPIPELINE = "1.2f";
+	versionPIPELINE = "1.2g";
 
 	requires(versionFIJI);
 	
@@ -1583,7 +1583,8 @@ macro "Pomegranate"
 	if (!segMode) selectImage(msChannel);
 	else 
 	{
-		if (runMode != "NUCL") selectImage(bfChannel);
+		if ((runMode != "NUCL") & (!binaryMode)) selectImage(bfChannel);
+		else if ((runMode != "NUCL") & (binaryMode)) selectImage("Whole_Cell_RGB.tif");
 		else if (runMode != "WLCL") selectImage(nmChannel);
 	}
 	
