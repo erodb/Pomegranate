@@ -70,3 +70,4 @@ See the [Documentation](https://github.com/erodb/Pomegranate/tree/master/documen
 
 **Version 1.2g** 
 * Fixed a bug that led to erroneous result file outputs for 2D binary whole cell inputs.
+* Repaired Pomegranate Analysis Revision Tool to be compatible with these changes.
