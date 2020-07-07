@@ -678,8 +678,7 @@ macro "Pomegranate"
 	
 	if (runMode != "NUCL")
 	{
-		selectImage(bfChannel);
-		bfbd = bitDepth();
+		
 
 		wcChoices = newArray("Bright-field (Default 2D Segmentation)","Binary (External Segmentation Input)");
 		Dialog.create("Whole-Cell Only, Single Image Input");
@@ -1578,6 +1577,7 @@ macro "Pomegranate"
 
 	// Measure Intensity
 	showStatus("Pomegranate - Measuring Whole Cell ROIs");
+	run("Set Measurements...", "area mean standard modal min centroid center perimeter fit shape feret's median stack display redirect=None decimal=3"); // Remove Threshold Columns
 	setBatchMode(true);
 		
 	if (!segMode) selectImage(msChannel);
