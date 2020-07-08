@@ -678,7 +678,8 @@ macro "Pomegranate"
 	
 	if (runMode != "NUCL")
 	{
-		
+		selectImage(bfChannel);
+		bfbd = bitDepth();
 
 		wcChoices = newArray("Bright-field (Default 2D Segmentation)","Binary (External Segmentation Input)");
 		Dialog.create("Whole-Cell Only, Single Image Input");
