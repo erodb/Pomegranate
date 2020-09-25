@@ -5,6 +5,7 @@ Pomegranate is a nuclear and whole-cell detection, reconstruction, and 3D segmen
 * [Publication Links](#publication-links)
 * [Documentation](#documentation)
 * [Contact Information](#contact-information)
+* [Plugins Used](#cplugins-used)
 * [Version History](#version-history)
 
 ## Publication Links
@@ -20,6 +21,10 @@ See the [Documentation](https://github.com/erodb/Pomegranate/tree/master/documen
 **Co-Authors** 
 * Eric Esposito (eeric@vt.edu)
 * Silke Hauf (silke@vt.edu)
+
+##Plugins Used
+* [AnalyzeSkeleton 2D/3D](https://imagejdocu.tudor.lu/doku.php?id=plugin:analysis:analyzeskeleton:start#installation)
+* [Watershed Irregular Features](https://imagej.net/BioVoxxel_Toolbox.html#Watershed_Irregular_Features)
 
 ## Version History
 **Version 1.0** 
