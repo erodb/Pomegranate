@@ -22,7 +22,7 @@ See the [Documentation](https://github.com/erodb/Pomegranate/tree/master/documen
 * Eric Esposito (eeric@vt.edu)
 * Silke Hauf (silke@vt.edu)
 
-##Plugins Used
+## Plugins Used
 * [AnalyzeSkeleton 2D/3D](https://imagejdocu.tudor.lu/doku.php?id=plugin:analysis:analyzeskeleton:start#installation)
 * [Watershed Irregular Features](https://imagej.net/BioVoxxel_Toolbox.html#Watershed_Irregular_Features)
 
