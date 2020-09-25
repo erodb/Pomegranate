@@ -8,7 +8,7 @@ library(ggcorrplot) # install.packages("ggcorrplot")
 
 # Set this working directory as the directory that is holding multiple Pomegranate outputs
 # or as the directory of a single Pomegranate Output
-setwd("C:/Users/Erod/Desktop/Pomegranate/Septating_Nuclei_Repair") 
+setwd("E:/Data/Hauf Lab/Jessie_Testing") 
 exclusionList <- c("") # Put Object_IDs of cells you wish to exclude here
 
 # [0] Functions ------------------------------------------------------------------------------------------------------------
@@ -33,7 +33,7 @@ data.Widths.Original<- list.files(pattern = "\\_Width_Profile.csv", recursive = 
 
 # GET EQUATION AND R-SQUARED AS STRING
 # SOURCE: https://groups.google.com/forum/#!topic/ggplot2/1TgH-kG5XMA
-ggRegPlot <- function(data, xparam, yparam){
+ggRegPlot <- function(data, xparam, yparam, cparam){
   model <- lm(yparam ~ xparam, data)
   annotations.lm <- as.character(c("Intercept: ",
                                    format(unname(coef(model)[1]), digits = 2),
@@ -42,7 +42,7 @@ ggRegPlot <- function(data, xparam, yparam){
                                    " - R2: ",
                                    format(summary(model)$r.squared, digits = 3)))
   ggplot(data) +
-    geom_point(aes(x = xparam, y = yparam), size = 0.5) +
+    geom_point(aes(x = xparam, y = yparam, color = cparam), size = 0.5) +
     ggtitle(paste0(annotations.lm, collapse = "")) +
     geom_abline(intercept = as.numeric(annotations.lm[2]),
                 slope = as.numeric(annotations.lm[4]),
@@ -119,7 +119,8 @@ data.Full.Approximation.Paired <- data.Full.Approximation %>%
   filter(length(unique(Data_Type)) != 1,
          Object_ID %notin% exclusionList) %>%
   mutate(refSlope = ifelse(Data_Type == "Nucleus",1, NA),
-         refIntercept = ifelse(Data_Type == "Nucleus",0, NA))
+         refIntercept = ifelse(Data_Type == "Nucleus",0, NA),
+         N = n())
 
 # [3] Process and Summarise Width Data ------------------------------------------------------------------------------------------------------------
 data.Widths.Filtered <- data.Widths.Original %>%
@@ -388,13 +389,32 @@ ggarrange(plot.SurfaceArea.Feret.N, plot.SurfaceArea.Ellipsoid.N, plot.SurfaceAr
 # [6] Intensity of Target Signal Plots ------------------------------------------------------------------------------------------------------------------
 plot.Signal.WC <- ggRegPlot(filter(data.Full.Summary.Paired, Data_Type == "Whole_Cell"), 
                             xparam = filter(data.Full.Summary.Paired, Data_Type == "Whole_Cell")$Volume_microns3, 
-                            yparam = filter(data.Full.Summary.Paired, Data_Type == "Whole_Cell")$Intensity_per_Vol) + 
-  labs(x = bquote("Cell Volume"~("Âµm"^3)), y = "Signal Concentration (a.u.)")
+                            yparam = filter(data.Full.Summary.Paired, Data_Type == "Whole_Cell")$Intensity_per_Vol,
+                            cparam = filter(data.Full.Summary.Paired, Data_Type == "Whole_Cell")$N) + 
+  labs(x = bquote("Cell Volume"~("µm"^3)), y = "Signal Concentration (a.u.)")
 
 plot.Signal.N <- ggRegPlot(filter(data.Full.Summary.Paired, Data_Type == "Nucleus"), 
                            xparam = filter(data.Full.Summary.Paired, Data_Type == "Nucleus")$Volume_microns3, 
-                           yparam = filter(data.Full.Summary.Paired, Data_Type == "Nucleus")$Intensity_per_Vol) + 
-  labs(x = bquote("Nuclear Volume"~("Âµm"^3)), y = "Signal Concentration (a.u.)")
+                           yparam = filter(data.Full.Summary.Paired, Data_Type == "Nucleus")$Intensity_per_Vol,
+                           cparam = filter(data.Full.Summary.Paired, Data_Type == "Whole_Cell")$N) + 
+  labs(x = bquote("Nuclear Volume"~("µm"^3)), y = "Signal Concentration (a.u.)")
 
 ggarrange(plot.Signal.N, plot.Signal.WC,
-          ncol = 2, nrow = 1)
+          ncol = 2, nrow = 1,
+          common.legend = TRUE)
+
+# Simpler plots
+plot.Signal.WC.Simple <- ggplot(filter(data.Full.Summary.Paired, Data_Type == "Whole_Cell")) +
+  geom_point(aes(x = Volume_microns3, y = Intensity_per_Vol, color = as.character(N - 1)), size = 2) +
+  labs(color = "Nuclei") +
+  theme_classic()
+
+plot.Signal.N.Simple <- ggplot(filter(data.Full.Summary.Paired, Data_Type == "Nucleus")) +
+  geom_point(aes(x = Volume_microns3, y = Intensity_per_Vol, color = as.character(N - 1)), size = 2) +
+  labs(color = "Nuclei") +
+  theme_classic()
+
+
+ggarrange(plot.Signal.N.Simple, plot.Signal.WC.Simple,
+          ncol = 2, nrow = 1,
+          common.legend = TRUE)
