@@ -82,3 +82,7 @@ See the [Documentation](https://github.com/erodb/Pomegranate/tree/master/documen
 * A new Nuclear ID column has been added to annotate seperate nucleis in the same cell.
 * Fixed a bug where the ROI Manager would be cleared prior to reconstruction.
 * Repaired Sample R Code to reflect these changes.
+
+**Version 1.2h-r** 
+* Repaired Pomegranate Analysis Revision Tool to be compatible with the changes in 1.2h.
+* Repaired Pomegranate Analysis Extension Tool to be compatible with the changes in 1.2h.
