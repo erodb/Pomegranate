@@ -71,3 +71,9 @@ See the [Documentation](https://github.com/erodb/Pomegranate/tree/master/documen
 **Version 1.2g** 
 * Fixed a bug that led to erroneous result file outputs for 2D binary whole cell inputs.
 * Repaired Pomegranate Analysis Revision Tool to be compatible with these changes.
+
+**Version 1.2h** 
+* Pomegranate now allows for binucleated cells in nuclear analyses. These were previously excluded from the analysis.
+* A new Nuclear ID column has been added to annotate seperate nucleis in the same cell.
+* Fixed a bug where the ROI Manager would be cleared prior to reconstruction.
+* Repaired Sample R Code to reflect these changes.
