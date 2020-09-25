@@ -5,13 +5,13 @@
  *  Hauf Lab
  *  
  *  Erod Keaton D. Baybay (2019) - erodb@vt.edu
- *  Last Updated: July 6, 2020
+ *  Last Updated: July 28, 2020
  */
 
 macro "Pomegranate"
 { 		 
 	versionFIJI = "1.53b";
-	versionPIPELINE = "1.2g";
+	versionPIPELINE = "1.2h";
 
 	requires(versionFIJI);
 	
@@ -256,10 +256,12 @@ macro "Pomegranate"
 
 		// Voxel Size Management
 		Dialog.create("Voxel Size Management");
-			Dialog.addNumber("Voxel Width (" + unit + ")", 0.1071);
-			Dialog.addNumber("Voxel Height (" + unit + ")", 0.1071);
-			Dialog.addNumber("Voxel Depth (" + unit + ")", 0.0659);
+			Dialog.addString("Voxel Width", unit);
+			Dialog.addNumber("Voxel Width", vx);
+			Dialog.addNumber("Voxel Height", vy);
+			Dialog.addNumber("Voxel Depth", vz);
 		Dialog.show();
+		nunit = Dialog.getString();
 		nvx = Dialog.getNumber();
 		nvy = Dialog.getNumber();
 		nvz = Dialog.getNumber();
@@ -267,17 +269,17 @@ macro "Pomegranate"
 		if (!segMode) 
 		{
 			selectImage(msChannel);
-			setVoxelSize(nvx, nvy, nvz, unit);
+			setVoxelSize(nvx, nvy, nvz, nunit);
 		}
 		if (runMode != "WLCL")
 		{
 			selectImage(nmChannel);
-			setVoxelSize(nvx, nvy, nvz, unit);
+			setVoxelSize(nvx, nvy, nvz, nunit);
 		}
 		if (runMode != "NUCL")
 		{
 			selectImage(bfChannel);
-			setVoxelSize(nvx, nvy, nvz, unit);
+			setVoxelSize(nvx, nvy, nvz, nunit);
 		}
 			
 			
@@ -391,9 +393,9 @@ macro "Pomegranate"
 			en = 0.2;
 			mroi = 5;
 			Dialog.create("Nuclei Building Parameters");
-				Dialog.addNumber("Centroid Search Radius (" + unit + ")", searchRadiusThresh);
-				Dialog.addNumber("Centroid Cohesion Radius (" + unit + ")", cohesionRadiusThresh);
-				Dialog.addNumber("Enlarge Parameter (" + unit + ")", en);
+				Dialog.addNumber("Centroid Search Radius (" + nunit + ")", searchRadiusThresh);
+				Dialog.addNumber("Centroid Cohesion Radius (" + nunit + ")", cohesionRadiusThresh);
+				Dialog.addNumber("Enlarge Parameter (" + nunit + ")", en);
 				Dialog.addNumber("Minimum ROIs per Nuclei", mroi);
 			Dialog.show();
 			searchRadiusThresh = Dialog.getNumber;
@@ -405,9 +407,9 @@ macro "Pomegranate"
 			deleteList = newArray();
 
 			print("\n[Nuclei Building Parameters]");
-			print("Centroid Search Radius (" + unit + "): " + searchRadiusThresh);
-			print("Centroid Cohesion Radius (" + unit + "): " + cohesionRadiusThresh);
-			print("Enlarge Parameter (" + unit + "): " + en);
+			print("Centroid Search Radius (" + nunit + "): " + searchRadiusThresh);
+			print("Centroid Cohesion Radius (" + nunit + "): " + cohesionRadiusThresh);
+			print("Enlarge Parameter (" + nunit + "): " + en);
 			print("Minimum ROIs per Nuclei: " + mroi);
 	
 			if ((!isNaN(searchRadiusThresh)) && (searchRadiusThresh > 0)) step++; // * * *
@@ -461,7 +463,7 @@ macro "Pomegranate"
 				Roi.setProperty("Object_ID", ID);
 				Roi.setProperty("Data_Type", "Nucleus");
 				Roi.setProperty("ROI_Color", currentColor);
-				Roi.setProperty("Nucleus_ID", nuclearIndex);
+				Roi.setProperty("Nuclear_Index", nuclearIndex);
 				Roi.setProperty("Mid_Slice", false);
 				roiManager("Update");
 	
@@ -508,7 +510,7 @@ macro "Pomegranate"
 							Roi.setProperty("Object_ID", ID);
 							Roi.setProperty("Data_Type", "Nucleus");
 							Roi.setProperty("ROI_Color", currentColor);
-							Roi.setProperty("Nucleus_ID", nuclearIndex);
+							Roi.setProperty("Nuclear_Index", nuclearIndex);
 							Roi.setProperty("Mid_Slice", false);
 							roiManager("Update");
 							
@@ -575,7 +577,7 @@ macro "Pomegranate"
 					roiManager("Update");
 					getStatistics(area);
 		
-					print("[" + ID + "] Nuclear Index: " + nuclearIndex + "   | Mid-Slice Index: " + currentMaxAreaIndex + "   | Number of Slices: " + currentMembers.length + "   | Mid-Slice Area (sq. micron): " + area + "   | Cohesion Radius (" + unit + "): " + cohesionRadius);
+					print("[" + ID + "] Nuclear Index: " + nuclearIndex + "   | Mid-Slice Index: " + currentMaxAreaIndex + "   | Number of Slices: " + currentMembers.length + "   | Mid-Slice Area (sq. micron): " + area + "   | Cohesion Radius (" + nunit + "): " + cohesionRadius);
 				}
 			}
 		} 
@@ -662,8 +664,8 @@ macro "Pomegranate"
 		}
 		roiManager("Deselect");
 	
-		// Centroid Export
-		showStatus("Pomegranate - Exporting Centroid ROis");
+		// Centroid ROI Export
+		showStatus("Pomegranate - Exporting Centroid ROIs");
 		print("\n[Exporting Centroid ROIs]");
 		midFile = directoryROI + replace(File.getName(imagePath),'.','_') + "_Centroid_ROIs.zip";
 		if (!File.exists(midFile)) roiManager("Save", midFile);
@@ -689,7 +691,7 @@ macro "Pomegranate"
 		if (Dialog.getChoice() == wcChoices[0]) binaryMode = false;
 		else binaryMode = true;
 			
-		if (binaryMode == false)
+		if (!binaryMode)
 		{
 			showStatus("Pomegranate - Generating Whole Cell Binary");
 			selectImage(bfChannel);
@@ -774,8 +776,8 @@ macro "Pomegranate"
 					hfmaxCirc = 1;
 					Dialog.create("Shape-based Hole Filling");
 						Dialog.addMessage("The following parameters are shape descriptors\nfor the holes you wish to detect.\n");
-						Dialog.addNumber("Minimum Size (sq. " + unit + ")", hfminSize);
-						Dialog.addNumber("Maximum Size (sq. " + unit + ")", hfmaxSize);
+						Dialog.addNumber("Minimum Size (sq. " + nunit + ")", hfminSize);
+						Dialog.addNumber("Maximum Size (sq. " + nunit + ")", hfmaxSize);
 						Dialog.addNumber("Minimum Circularity", hfminCirc);
 						Dialog.addNumber("Maximum Circularity", hfmaxCirc);
 					Dialog.show();
@@ -1098,13 +1100,12 @@ macro "Pomegranate"
 // [ 8 ] -----------------------------------------------------------------------------------------------------------------------------------------------	
 		
 		}
-		else 
+		else // 2D BInary Input
 		{
 			selectImage(bfChannel);
 			if (nSlices > 1) run("Z Project...", "projection=[Max Intensity]");
 			rename("INPUT");
 
-			// Calculate absolute max slices to make complete reconstruction
 			run("Duplicate...", "title=DUP duplicate");
 			
 			// Guarentee Binary
@@ -1114,38 +1115,82 @@ macro "Pomegranate"
 			run("Convert to Mask", "method=Otsu background=Dark black");
 			
 			run("Distance Map");
-			addSlices = getValue("Max") + 2; // 2 Slice Buffer
+			efactor = nvx/nvz;
+			binSlices = 2*(Math.ceil(getValue("Max")*efactor) + 2);
 			inputWidth = getWidth();
 			inputHeight = getHeight();
 
-			// Generate New Input (Redundant)
-			newImage("BINARY", "8-bit black", inputWidth, inputHeight, 1 + (addSlices * 2));
-			selectImage("INPUT");
-			run("Select All");
-			run("Copy");
-			selectImage("BINARY");
-			
-			midslice = round(nSlices/2);
-			setSlice(midslice);
-			run("Paste");
-
-			// Guarentee Binary
-			run("8-bit");
-			setAutoThreshold("Otsu dark");
-			setThreshold(1, 10e6);
-			run("Convert to Mask", "method=Otsu background=Dark black");
-			close("INPUT");
-			close("DUP");
-			roiManager("Deselect");
-			run("Select None"); 
-			rename(bfChannel);
-
-			// Obtain Image Information
-			getDimensions(width, height, channels, slices, frames);
-			setVoxelSize(nvx, nvy, nvz, unit);
-
-			// Make ROIs
-			run("Analyze Particles...", "clear add stack");	
+			// Ignore Measurement Channel
+			if (segMode)
+			{
+				binSlices = getNumber("Number of Z Slices:", binSlices);
+				
+				// Generate New Input
+				newImage("BINARY", "8-bit black", inputWidth, inputHeight, binSlices);
+				selectImage("INPUT");
+				run("Select All");
+				run("Copy");
+				selectImage("BINARY");
+				
+				midslice = round(nSlices/2);
+				setSlice(midslice);
+				run("Paste");
+	
+				// Guarentee Binary
+				run("8-bit");
+				setAutoThreshold("Otsu dark");
+				setThreshold(1, 10e6);
+				run("Convert to Mask", "method=Otsu background=Dark black");
+				close("INPUT");
+				close("DUP");
+				roiManager("Deselect");
+				run("Select None"); 
+				rename(bfChannel);
+	
+				// Obtain Image Information
+				getDimensions(width, height, channels, slices, frames);
+				setVoxelSize(nvx, nvy, nvz, nunit);
+	
+				// Make ROIs
+				run("Analyze Particles...", "clear add stack");	
+			}
+			// Not Ignoring Measurement Channel
+			else
+			{
+				selectImage(msChannel);
+				binSlices = nSlices;
+				setSlice(round(binSlices/2));
+				waitForUser("Suggested Midplane: " + round(binSlices/2) + "\nPlease Select a Midplane");
+				midslice = getSliceNumber();				
+				
+				// Generate New Input
+				newImage("BINARY", "8-bit black", inputWidth, inputHeight, binSlices);
+				selectImage("INPUT");
+				run("Select All");
+				run("Copy");
+				selectImage("BINARY");
+				
+				setSlice(midslice);
+				run("Paste");
+	
+				// Guarentee Binary
+				run("8-bit");
+				setAutoThreshold("Otsu dark");
+				setThreshold(1, 10e6);
+				run("Convert to Mask", "method=Otsu background=Dark black");
+				close("INPUT");
+				close("DUP");
+				roiManager("Deselect");
+				run("Select None"); 
+				rename(bfChannel);
+	
+				// Obtain Image Information
+				getDimensions(width, height, channels, slices, frames);
+				setVoxelSize(nvx, nvy, nvz, nunit);
+	
+				// Make ROIs
+				run("Analyze Particles...", "clear add stack");
+			}
 		}
 		
 		// Load Nuclear Centroids		
@@ -1166,7 +1211,7 @@ macro "Pomegranate"
 		run("Multiply...", "value=0 stack");
 		run("RGB Color");
 		rename("Canvas");
-		setVoxelSize(nvx, nvy, nvz, unit);
+		setVoxelSize(nvx, nvy, nvz, nunit);
 
 		selectWindow("Log");
 		print("\n[Whole Cell Z Alignment]");
@@ -1191,18 +1236,31 @@ macro "Pomegranate"
 				if ((acontains(nonsolidX, rx)) && (acontains(nonsolidY, ry))) nonsolidNuclei++;
 			}
 		}
-
-		deleteList = newArray();
 		septatingcells = 0;
 		nonucleicells = 0;
 		mergedcells = 0;
 		nucleimerged = 0;
+		
+		grabList = newArray();
+		deleteList = newArray();
 
+		// OID Banks
+		oldOIDs = newArray();
+		newOIDs = newArray();
+		OIDnids = newArray();
+		OIDcolors = newArray(); 
+		
 		n = roiManager("Count");
 		for (i = 0; i < n; i++)
 		{
+			// Centroid ROIs start with Z to keep them at the end of the ROI Manager
+			// Anything else is a Whole-Cell ROI
 			if (!startsWith(call("ij.plugin.frame.RoiManager.getName", i), 'Z'))
 			{	
+				// Defaults
+				cslice_a = -1;
+				cslice_b = -1;
+				
 				nucleiContained = 0;
 				roiManager("Select", i);
 				Roi.getCoordinates(rx, ry);
@@ -1213,50 +1271,109 @@ macro "Pomegranate"
 					{
 						if (startsWith(call("ij.plugin.frame.RoiManager.getName", k), 'Z'))
 						{
-							deleteList = Array.concat(deleteList, k);
+							if (!acontains(grabList, k)) grabList = Array.concat(grabList, k);
+							if (!acontains(deleteList, k)) deleteList = Array.concat(deleteList, k);
 							roiManager("Select", newArray(i, k));
 							roiManager("AND");
 							if (selectionType() != -1) 
-							{
-								roiManager("Select", k);
-								cslice = getSliceNumber();
-								nucleiContained++;
-								ID = Roi.getProperty("Object_ID");
-								currentColor = Roi.getProperty("ROI_Color");
+							{	
+								roiManager("Deselect");
+								run("Select None");
+					
+								// First Nuclei (First Come, First Served)
+								if (nucleiContained == 0)
+								{
+									nucleiContained++;
+									nid = "N_A";
 									
-								if (!ncAlign) setSlice(midslice);
-										
-								roiManager("Select", i);
-								setSlice(cslice);
-								Roi.setProperty("Paired_Nuclei", k);
-								Roi.setProperty("Object_ID", ID);
-								Roi.setProperty("Data_Type", "Whole_Cell");
-								Roi.setProperty("ROI_Color", currentColor);
-								Roi.setStrokeColor(currentColor);
-								roiManager("Update");
+									roiManager("Select", k);
+									cslice_a = getSliceNumber();
+									ID = Roi.getProperty("Object_ID");
+									currentColor = Roi.getProperty("ROI_Color");
+
+									// Update Data stored in centroid
+									roiManager("Select", k);
+									Roi.setProperty("Nuclear_ID", nid);
+									roiManager("Update");
+
+									// Rename
+									roiManager("Select", k);
+									roiManager("Rename","Z_" + ID + "_A_Centroid");
+
+									// Store Conversion parameters as Arrays - so we don't have to reopen centroid data
+									if (!acontains(oldOIDs, ID))
+									{
+										oldOIDs = Array.concat(oldOIDs, ID);
+										newOIDs = Array.concat(newOIDs, ID);
+										OIDnids = Array.concat(OIDnids, nid);
+										OIDcolors = Array.concat(OIDcolors, currentColor);
+									}
+								}
+								// Second Nuclei
+								else if (nucleiContained == 1)
+								{
+									nucleiContained++;
+									nid = "N_B";
+									
+									roiManager("Select", k);
+									oldID = Roi.getProperty("Object_ID");
+									cslice_b = getSliceNumber();
+
+									// Update Data  stored in centroid
+									roiManager("Select", k);
+									Roi.setProperty("Object_ID", ID);
+									Roi.setProperty("Old_Object_ID", oldID);
+									Roi.setProperty("ROI_Color", currentColor);
+									Roi.setProperty("Nuclear_ID", nid);
+									Roi.setName("Z_" + ID + "_B_Centroid");
+									roiManager("Update");
+
+									// Rename
+									roiManager("Select", k);
+									roiManager("Rename","Z_" + ID + "_B_Centroid");
+
+									// Store Conversion parameters as Arrays - so we don't have to reopen centroid data
+									if (!acontains(oldOIDs, oldID))
+									{
+										oldOIDs = Array.concat(oldOIDs, oldID);
+										newOIDs = Array.concat(newOIDs, ID);
+										OIDnids = Array.concat(OIDnids, nid);
+										OIDcolors = Array.concat(OIDcolors, currentColor);
+									}
+
+								}
+								// Too Many
+								else if (nucleiContained > 2) deleteList = Array.concat(deleteList, i);
 							}
 						}
 					}
 
-					// Delete Septating / No Nuclei Cells
-					if (nucleiContained != 1) 
+					roiManager("Deselect");
+					run("Select None");
+
+					// Extract Mean Midslice for cells with two nuclei
+					if ((cslice_a != -1) & (cslice_b != -1)) cslice = round((cslice_a + cslice_b)/2);
+					else if (cslice_a != -1) cslice = cslice_a;
+					else if (!ncAlign) cslice = midslice;
+					else cslice = -1;
+
+					if (cslice != -1)
 					{
-						deleteList = Array.concat(deleteList, i);
-						if (nucleiContained == 0) nonucleicells++;
-						if (nucleiContained == 2) septatingcells++;
-						if (nucleiContained > 2) 
-						{
-							mergedcells++;
-							nucleimerged += nucleiContained;
-						}
-					}
-					else 
-					{
-						roiManager("Select",i);
+						roiManager("Select", i);
+						Roi.setProperty("Object_ID", ID);
+						Roi.setProperty("Data_Type", "Whole_Cell");
+						Roi.setProperty("ROI_Color", currentColor);
+						Roi.setProperty("Nuclear_ID", "WC");
 						Roi.setProperty("nucleiContained", nucleiContained);
+						Roi.setStrokeColor(currentColor);
+						setSlice(cslice);
 						roiManager("Update");
 					}
+					// Zero Nuclei Case
+					else deleteList = Array.concat(deleteList, i);
+
 					print("[" + ID + "] - " + call("ij.plugin.frame.RoiManager.getName", i) + " Nuclei Contained: " + nucleiContained);
+
 				}
 				else 
 				{
@@ -1276,7 +1393,24 @@ macro "Pomegranate"
 			}
 		}
 		
-		// Clear Bad ROIs
+		// Grab Centroid ROIs
+		if (grabList.length > 0)
+		{
+			// Paired Centroid ROI Export
+			showStatus("Pomegranate - Exporting Paired Centroid ROIs");
+			print("\n[Exporting Paired Centroid ROIs]");
+			pmidFile = directoryROI + replace(File.getName(imagePath),'.','_') + "_Paired_Centroid_ROIs.zip";
+			if (!File.exists(pmidFile)) 
+			{
+				roiManager("Select", grabList);
+				roiManager("Save Selected", pmidFile);
+			}
+			print("File Created: " + pmidFile);
+		}
+		roiManager("Deselect");
+		run("Select None");
+
+		// Delete Extra ROIs
 		if (deleteList.length > 0)
 		{
 			roiManager("Select", deleteList);
@@ -1307,10 +1441,80 @@ macro "Pomegranate"
 
 			print("Data Size: " + sliceDisplacement.length + " datapoints");
 		}
+
+// [ 9 ] -----------------------------------------------------------------------------------------------------------------------------------------------
+
+		setBatchMode("hide"); 
+		
+		// Reconstruction Input ROI Export
+		showStatus("Pomegranate - Exporting Reconstruction Input Whole Cell ROis");
+		print("\n[Exporting Reconstruction Input Whole Cell ROIs]");
+		rinpFile = directoryROI + replace(File.getName(imagePath),'.','_') + "_Unfiltered_Reconstruction_Input_Whole_Cell_ROIs.zip";
+		if (!File.exists(rinpFile)) roiManager("Save", rinpFile);
+		print("File Created: " + rinpFile);
+
+		roiManager("Reset");
+		
+		if (runMode != "WLCL")
+		{
+			roiManager("Open", nucFile); // Open original nuclear file
+	
+			deleteList = newArray();
+			n = roiManager("Count");
+			for (i = 0; i < oldOIDs.length; i++)
+			{
+				// Recall from OID arrays
+				oldID = oldOIDs[i];
+				ID = newOIDs[i];
+				nuclearID = OIDnids[i];
+				currentColor = OIDcolors[i];
+	
+				for (k = 0; k < n; k++)
+				{
+					
+					// Import into Nuclei Data
+					roiManager("Select", k);
+					currentSlice = getSliceNumber();
+					checkID = Roi.getProperty("Object_ID");
+					if (checkID == oldID)
+					{
+						roiManager("Select", k);
+						Roi.setProperty("Object_ID", ID);
+						Roi.setProperty("Old_Object_ID", oldID);
+						Roi.setProperty("ROI_Color", currentColor);
+						Roi.setProperty("Nuclear_ID", nuclearID);
+						Roi.setStrokeColor(currentColor);
+						roiManager("Update");
+	
+						// Rename
+						roiManager("Select", k);
+						roiManager("Rename", nuclearID + "_" + ID + "_" + currentSlice);
+	
+						print ("Nuclear OID Conversion: " + oldID + " to " + ID + " at slice " + currentSlice);
+					}
+				}
+			}
+			
+			roiManager("Deselect");
+			run("Select None");
+	
+			// Paired Nuclear ROI Export
+			showStatus("Pomegranate - Exporting Paired Nuclear ROis");
+			print("\n[Exporting Paired Nuclear ROIs]");
+			pnucFile = directoryROI + replace(File.getName(imagePath),'.','_') + "_Paired_Nuclear_ROIs.zip";
+			if (!File.exists(pnucFile)) roiManager("Save", pnucFile);
+			print("File Created: " + pnucFile);
+
+			roiManager("Reset");
+		}
+	
+		setBatchMode("show"); 
+		// Reopen Reconstruction WC Input File
+		roiManager("Open", rinpFile);
 	}
 	step++; // * * *
 
-// [ 9 ] -----------------------------------------------------------------------------------------------------------------------------------------------
+// [ 10 ] -----------------------------------------------------------------------------------------------------------------------------------------------
 
 	if (runMode != "NUCL")
 	{
@@ -1319,13 +1523,6 @@ macro "Pomegranate"
 		n = roiManager("Count");
 		finalcells = n;
 		print("Cells: " + n);
-
-		// Reconstruction Input ROI Export
-		showStatus("Pomegranate - Exporting Whole Cell ROis");
-		print("\n[Exporting Whole Cell ROIs]");
-		rinpFile = directoryROI + replace(File.getName(imagePath),'.','_') + "_Unfiltered_Reconstruction_Input_Whole_Cell_ROIs.zip";
-		if (!File.exists(rinpFile)) roiManager("Save", rinpFile);
-		print("File Created: " + rinpFile);
 	
 		selectImage("Canvas");
 		
@@ -1391,7 +1588,8 @@ macro "Pomegranate"
 			selectImage("Medial_Axis_Transform");
 			roiManager("Select", i);
 			mid = getSliceNumber();
-			
+
+			nid = Roi.getProperty("Nuclear_ID");
 			ID = Roi.getProperty("Object_ID");
 			currentColor = Roi.getProperty("ROI_Color");
 			setColor(currentColor);
@@ -1401,7 +1599,7 @@ macro "Pomegranate"
 			for (j = 0; j < wcxPoints.length; j++) distMapValues[j] = getPixel(wcxPoints[j], wcyPoints[j]);
 
 			selectImage("Canvas");
-			getVoxelSize(vx, vy, vz, unit);
+			getVoxelSize(vx, vy, vz, nunit);
 			for (k = 1; k <= nSlices; k++)
 			{
 				for (j = 0; j < wcxPoints.length; j++) 
@@ -1412,7 +1610,7 @@ macro "Pomegranate"
 					segmentRadius = crossSectionRadius(rinput, zinput) + 1;
 					//print("Mid:" + mid + " k:" + k);
 					if ((rinput != 0) & (!isNaN(segmentRadius))) print("Cell " + i + ", Slice " + k + ", Segment " + j + ") --- R0: " + rinput + ", RS: " + segmentRadius + ", Z: " + zinput + ", Elongation Factor: " + efactor );
-					if (segmentRadius > 2) 
+					if (segmentRadius > (2 * nvx)) 
 					{
 						// Compound Selection
 						setKeyDown("Shift");
@@ -1424,6 +1622,7 @@ macro "Pomegranate"
 				if (selectionType() != -1)
 				{
 					Roi.setProperty("Object_ID", ID);
+					Roi.setProperty("Nuclear_ID", nid);
 					Roi.setProperty("ROI_Color", currentColor);
 					Roi.setStrokeColor(currentColor);
 					
@@ -1464,9 +1663,9 @@ macro "Pomegranate"
 		if (!File.exists(wcbinary)) saveAs(".tiff", wcbinary);
 		print("\n[Image Export]\nWhole Cell Binary: " + wcbinary);
 	
-		// Whole Cell ROI Export
-		showStatus("Pomegranate - Exporting Whole Cell ROis");
-		print("\n[Exporting Whole Cell ROIs]");
+		// Unfiltered Whole Cell ROI Export
+		showStatus("Pomegranate - Exporting Unfiltered Reconstruction Output Whole Cell ROis");
+		print("\n[Exporting Unfiltered Reconstruction Output Whole Cell ROIs]");
 		wcFile = directoryROI + replace(File.getName(imagePath),'.','_') + "_Unfiltered_Reconstruction_Output_Whole_Cell_ROIs.zip";
 		if (!File.exists(wcFile)) roiManager("Save", wcFile);
 		print("File Created: " + wcFile);
@@ -1509,7 +1708,7 @@ macro "Pomegranate"
 
 	step++; // * * *
 
-// [ 10 ] -----------------------------------------------------------------------------------------------------------------------------------------------
+// [ 11 ] -----------------------------------------------------------------------------------------------------------------------------------------------
 
 	// Reload and Inspect
 	roiManager("Reset");
@@ -1522,7 +1721,9 @@ macro "Pomegranate"
 	}
 	
 	if (runMode != "NUCL") roiManager("Open", wcFile);
-	if (runMode != "WLCL") roiManager("Open", nucFile);
+	if (runMode == "NUCL") roiManager("Open", nucFile);
+	else if (runMode == "BOTH") roiManager("Open", pnucFile);
+	
 	roiManager("Sort");
 
 	roiManager("Show All Without Labels");
@@ -1574,7 +1775,7 @@ macro "Pomegranate"
 
 	step++;  // * * *
 
-// [ 11 ] -----------------------------------------------------------------------------------------------------------------------------------------------
+// [ 12 ] -----------------------------------------------------------------------------------------------------------------------------------------------
 
 	// Measure Intensity
 	showStatus("Pomegranate - Measuring Whole Cell ROIs");
@@ -1608,12 +1809,14 @@ macro "Pomegranate"
 		dType = Roi.getProperty("Data_Type");
 		midType = Roi.getProperty("Mid_Slice");
 		crad = Roi.getProperty("Cell_Radius");
+		nid = Roi.getProperty("Nuclear_ID");
 		pixelArea = xpc.length;
 				
 		setResult("Object_ID", i, ID);
 		if (midType) setResult("ROI_Type", i, "MID");
 		else setResult("ROI_Type", i, "NONMID");
-	
+
+		setResult("Nuclear_ID", i, nid);
 		setResult("Data_Type", i, dType);
 		setResult("Image", i, imageName);
 		setResult("Experiment", i, expName);
@@ -1623,7 +1826,7 @@ macro "Pomegranate"
 		setResult("voxelSize_X", i, nvx);
 		setResult("voxelSize_Y", i, nvy);
 		setResult("voxelSize_Z", i, nvz);
-		setResult("voxelSize_unit", i, unit);
+		setResult("voxelSize_unit", i, nunit);
 
 		setResult("Area_px", i, pixelArea);
 	}
@@ -1637,7 +1840,7 @@ macro "Pomegranate"
 	
 	step++; // * * *
 
-// [ 12 ] -----------------------------------------------------------------------------------------------------------------------------------------------
+// [ 13 ] -----------------------------------------------------------------------------------------------------------------------------------------------
 
 	if (runMode != "NUCL")
 	{
@@ -1664,8 +1867,8 @@ macro "Pomegranate"
 		run("Select None");
 
 		// Filtered Reconstruction Input ROI Export
-		showStatus("Pomegranate - Exporting Whole Cell ROis");
-		print("\n[Exporting Whole Cell ROIs]");
+		showStatus("Pomegranate - Exporting Filtered Reconstruction Output Whole Cell ROIs");
+		print("\n[Exporting Filtered Reconstruction Output Whole Cell ROIs]");
 		frinpFile = directoryROI + replace(File.getName(imagePath),'.','_') + "_Filtered_Reconstruction_Input_Whole_Cell_ROIs.zip";
 		if (!File.exists(frinpFile)) roiManager("Save", frinpFile);
 		print("File Created: " + frinpFile);
@@ -1674,7 +1877,7 @@ macro "Pomegranate"
 		{
 			// Revise Nuclear ROIs based on manual selection
 			roiManager("Reset");
-			roiManager("Open", nucFile);
+			roiManager("Open", pnucFile);
 			deleteList = newArray();
 			for (i = 0; i < roiManager("Count"); i++)
 			{
@@ -1700,7 +1903,7 @@ macro "Pomegranate"
 			if (!File.exists(fnucFile)) roiManager("Save", fnucFile);
 			print("File Created: " + fnucFile);
 		}
-		
+	
 		// Revise Reconstruction Output ROIs based on manual selection
 		roiManager("Reset");
 		roiManager("Open", wcFile);
@@ -1724,14 +1927,14 @@ macro "Pomegranate"
 		run("Select None");
 	
 		// Filtered Whole Cell ROI Export
-		showStatus("Pomegranate - Exporting Whole Cell ROis");
-		print("\n[Exporting Whole Cell ROIs]");
+		showStatus("Pomegranate - Filtered iltered Reconstruction Output Exporting Whole Cell ROIs");
+		print("\n[Exporting Filtered Reconstruction Output Whole Cell ROIs]");
 		fwcFile = directoryROI + replace(File.getName(imagePath),'.','_') + "_Filtered_Reconstruction_Output_Whole_Cell_ROIs.zip";
 		if (!File.exists(fwcFile)) roiManager("Save", fwcFile);
 		print("File Created: " + fwcFile);
 	}
 
-// [ 13 ] -----------------------------------------------------------------------------------------------------------------------------------------------
+// [ 14 ] -----------------------------------------------------------------------------------------------------------------------------------------------
 
 	// Runtime Check
 	print("\n[Run Performance]");
