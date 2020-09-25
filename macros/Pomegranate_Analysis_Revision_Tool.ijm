@@ -280,7 +280,7 @@ macro "Pomegranate Analysis Revision Tool"
 
 	// Save IDs
 	getDateAndTime(year, month, dayOfWeek, dayOfMonth, hour, minute, second, msec);
-	saveID = "" + year + "" + month + "" + dayOfMonth + "_" + hour + "" + minute + "_" + imageName;
+	saveID = "" + year + "" + month + "" + dayOfMonth + "_" + hour + "" + minute + "_" + replace(imageName,".","_");
 	runID = "OID" + (year - 2000) + "" + month + "" + dayOfMonth + "" + hour + "" + minute;
 
 	// Voxel Size Management
@@ -685,12 +685,14 @@ macro "Pomegranate Analysis Revision Tool"
 		dType = Roi.getProperty("Data_Type");
 		midType = Roi.getProperty("Mid_Slice");
 		crad = Roi.getProperty("Cell_Radius");
+		nid = Roi.getProperty("Nuclear_ID");
 		pixelArea = xpc.length;
 				
 		setResult("Object_ID", i, ID);
 		if (midType) setResult("ROI_Type", i, "MID");
 		else setResult("ROI_Type", i, "NONMID");
 	
+		setResult("Nuclear_ID", i, nid);
 		setResult("Data_Type", i, dType);
 		setResult("Image", i, imageName);
 		setResult("Experiment", i, expName);
@@ -739,18 +741,46 @@ macro "Pomegranate Analysis Revision Tool"
 			run("Select None");
 	
 			// Filtered Reconstruction Input ROI Export
-			showStatus("Pomegranate - Exporting Whole Cell ROis");
-			print("\n[Exporting Whole Cell ROIs]");
+			showStatus("Pomegranate - Exporting Filtered Reconstruction Output Whole Cell ROIs");
+			print("\n[Exporting Filtered Reconstruction Output Whole Cell ROIs]");
 			frinpFile = directoryROI + replace(File.getName(imagePath),'.','_') + "_Filtered_Reconstruction_Input_Whole_Cell_ROIs.zip";
 			if (!File.exists(frinpFile)) roiManager("Save", frinpFile);
 			print("File Created: " + frinpFile);
-		}
+	
+			if (runMode == "BOTH")
+			{
+				// Revise Nuclear ROIs based on manual selection
+				roiManager("Reset");
+				roiManager("Open", pnucFile);
+				deleteList = newArray();
+				for (i = 0; i < roiManager("Count"); i++)
+				{
+					roiManager("Select", i);
+					currentID = Roi.getProperty("Object_ID");
+					for (j = 0; j < oidRecord.length; j++)
+					{
+						if ((currentID == oidRecord[j])) deleteList = Array.concat(deleteList, i);
+					}
+				}
+				// Clear Bad ROIs
+				if (deleteList.length > 0)
+				{
+					roiManager("Select", deleteList);
+					roiManager("Delete");
+				}
+				roiManager("Deselect");
+				run("Select None");
 		
-		if (runMode == "BOTH")
-		{
-			// Revise Nuclear ROIs based on manual selection
+				// Filtered Nuclear ROI Export
+				print("\n[Exporting Nuclear ROI Files]");
+				fnucFile = directoryROI + replace(File.getName(imagePath),'.','_') + "_Filtered_Nuclear_ROIs.zip";
+				if (!File.exists(fnucFile)) roiManager("Save", fnucFile);
+				print("File Created: " + fnucFile);
+			}
+		
+			// Revise Reconstruction Output ROIs based on manual selection
 			roiManager("Reset");
-			roiManager("Open", nucFile);
+			roiManager("Open", wcFile);
 			deleteList = newArray();
 			for (i = 0; i < roiManager("Count"); i++)
 			{
@@ -769,42 +799,14 @@ macro "Pomegranate Analysis Revision Tool"
 			}
 			roiManager("Deselect");
 			run("Select None");
-	
-			// Filtered Nuclear ROI Export
-			print("\n[Exporting Nuclear ROI Files]");
-			fnucFile = directoryROI + replace(File.getName(imagePath),'.','_') + "_Filtered_Nuclear_ROIs.zip";
-			if (!File.exists(fnucFile)) roiManager("Save", fnucFile);
-			print("File Created: " + fnucFile);
-		}
 		
-		// Revise Reconstruction Output ROIs based on manual selection
-		roiManager("Reset");
-		roiManager("Open", wcFile);
-		deleteList = newArray();
-		for (i = 0; i < roiManager("Count"); i++)
-		{
-			roiManager("Select", i);
-			currentID = Roi.getProperty("Object_ID");
-			for (j = 0; j < oidRecord.length; j++)
-			{
-				if ((currentID == oidRecord[j])) deleteList = Array.concat(deleteList, i);
-			}
+			// Filtered Whole Cell ROI Export
+			showStatus("Pomegranate - Filtered iltered Reconstruction Output Exporting Whole Cell ROIs");
+			print("\n[Exporting Filtered Reconstruction Output Whole Cell ROIs]");
+			fwcFile = directoryROI + replace(File.getName(imagePath),'.','_') + "_Filtered_Reconstruction_Output_Whole_Cell_ROIs.zip";
+			if (!File.exists(fwcFile)) roiManager("Save", fwcFile);
+			print("File Created: " + fwcFile);
 		}
-		// Clear Bad ROIs
-		if (deleteList.length > 0)
-		{
-			roiManager("Select", deleteList);
-			roiManager("Delete");
-		}
-		roiManager("Deselect");
-		run("Select None");
-	
-		// Filtered Whole Cell ROI Export
-		showStatus("Pomegranate - Exporting Whole Cell ROis");
-		print("\n[Exporting Whole Cell ROIs]");
-		fwcFile = directoryROI + replace(File.getName(imagePath),'.','_') + "_Filtered_Reconstruction_Output_Whole_Cell_ROIs.zip";
-		if (!File.exists(fwcFile)) roiManager("Save", fwcFile);
-		print("File Created: " + fwcFile);
 	}
 
 // -----------------------------------------------------------------------------------------------------------------------------------------------

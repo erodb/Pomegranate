@@ -93,10 +93,11 @@ macro "Cell Viewer"
 		Rwidth = getValue("Mean") * vxy;
 		Rlength = skeleLength + (2 * Rwidth);
 		close("MAT");
+		run("Analyze Particles...", "exclude clear add stack");
 
 		showOverlay  = getBoolean("Show Ideal Reconstruction Comparison?");
 
-		run("Analyze Particles...", "exclude clear add stack");
+		// Length and Width Parameter Extraction
 		roiManager("Select", Array.getSequence(roiManager("Count")));
 		roiManager("Combine");
 			
@@ -107,6 +108,15 @@ macro "Cell Viewer"
 		Flength = getValue("Feret") / vxy;
 		Fwidth = getValue("MinFeret") / vxy;
 		Fangle = getValue("FeretAngle");
+
+		// Extract Volume
+		volume = 0;
+		n = roiManager("Count");
+		for (i = 0; i < n; i++)
+		{
+			roiManager("Select", i);
+			volume = volume + getValue("Area") * vz;
+		}
 
 		if (showOverlay)
 		{	
@@ -139,16 +149,21 @@ macro "Cell Viewer"
 		}
 		
 		print("[Size Information]");
+		print("Fit Ellipse Length: " + (Flength * vxy) + " " + unit);
+		print("Fit Ellipse Width: " + (Fwidth * vxy) + " " + unit);
+		
 		print("Feret Length: " + (Flength * vxy) + " " + unit);
 		print("Feret Width: " + (Fwidth * vxy) + " " + unit);
+		
 		print("Reconstruction Length: " + Rlength + " " + unit);
 		print("Reconstruction Width: " + 2 * Rwidth + " " + unit);
+
+		print("Volume: " + volume + " cubic. " + unit);
 				
 		setSlice(round(nSlices/2));
 		roiManager("Show None");
 		run("Select None");
 		roiManager("Deselect");
-		
 
 		run("3D Viewer");
 		call("ij3d.ImageJ3DViewer.setCoordinateSystem", "false");
@@ -160,3 +175,12 @@ macro "Cell Viewer"
 		waitForUser("Cell Isolated!");
 	}
 }
+
+// Clean Up Function
+function cleanAll()
+{
+	close('*');
+	run("Clear Results");
+	roiManager("Reset");
+	print("\\Clear");
+} 

@@ -151,14 +151,15 @@ macro "Pomegranate Width Analysis Tool" {
 							I = getPixel(rxp[j], ryp[j]);
 							if (I != 0) print(imageName + "," + Roi.getProperty("Object_ID") + ",Tip," + I + "," + rxp[j] + "," + ryp[j] + "," + vx + "," + vy + "," + vz + "," + unit);
 						}
-	
+
 						// Cleanup
 						selectImage(binary);
 						close("\\Others");
 					}
 				}
 
-				
+				selectWindow("Log");
+
 				// Result File Export [OVERWRITE]
 				logFile = directoryResults + "/" + nameLabel + "_Width_Profile.csv";
 				selectWindow("Log");
