@@ -86,3 +86,7 @@ See the [Documentation](https://github.com/erodb/Pomegranate/tree/master/documen
 **Version 1.2h-r** 
 * Repaired Pomegranate Analysis Revision Tool to be compatible with the changes in 1.2h.
 * Repaired Pomegranate Analysis Extension Tool to be compatible with the changes in 1.2h.
+
+**Version 1.2i** 
+* Added missing information in Log File output.
+* Added additional troubleshooting information in Log File output.
