@@ -11,7 +11,7 @@
 macro "Pomegranate"
 { 		 
 	versionFIJI = "1.53b";
-	versionPIPELINE = "1.2h";
+	versionPIPELINE = "1.2i";
 
 	requires(versionFIJI);
 	
@@ -63,6 +63,7 @@ macro "Pomegranate"
 	transpMode = Dialog.getCheckbox();
 	
 	print("Analysis Type: " + runMode);
+	print("Import Type: " + importMode);
 	if (segMode) print("Segmentation Only: Enabled");
 	else print("Segmentation Only: Disabled");
 	if (transpMode) print("Transparent Mode: Enabled");
@@ -108,7 +109,7 @@ macro "Pomegranate"
 
 			// Quick Check
 			getVoxelSize(vx, vy, vz, unit);
-			print("Voxel Size: " + vx + " " + unit + ", " + vy + " " + unit + ", " + vz + " " + unit);
+			print("Original Voxel Size: " + vx + " " + unit + ", " + vy + " " + unit + ", " + vz + " " + unit);
 			if (channels > 1)
 			{
 				channelList = newArray(channels);
@@ -164,6 +165,8 @@ macro "Pomegranate"
 			if (runMode != "WLCL") nmChannel = "C"+nmChannel+"-"+imageName;
 			if (runMode != "NUCL") bfChannel = "C"+bfChannel+"-"+imageName;
 		}
+
+		
 		else if (importMode == "UNMERGED")
 		{
 			// Measurement Channel Import
@@ -249,7 +252,7 @@ macro "Pomegranate"
 
 			// Quick Check
 			getVoxelSize(vx, vy, vz, unit);
-			print("Voxel Size: " + vx + " " + unit + ", " + vy + " " + unit + ", " + vz + " " + unit);
+			print("Original Voxel Size: " + vx + " " + unit + ", " + vy + " " + unit + ", " + vz + " " + unit);
 
 			step++; // * * *
 		}
@@ -281,6 +284,8 @@ macro "Pomegranate"
 			selectImage(bfChannel);
 			setVoxelSize(nvx, nvy, nvz, nunit);
 		}
+
+		print("User-defined Voxel Size: " + nvx + " " + nunit + ", " + nvy + " " + nunit + ", " + nvz + " " + nunit);
 			
 			
 		// Set Experiment Name
@@ -1552,6 +1557,8 @@ macro "Pomegranate"
 			fill();
 		}
 
+		if (transpMode) setBatchMode("exit and display");
+
 		// Guarentee Binary
 		selectImage("Binary_Filtered");
 		run("8-bit");
@@ -1561,26 +1568,52 @@ macro "Pomegranate"
 		roiManager("Deselect");
 		run("Select None"); 
 		
+		if (isOpen("Binary_Filtered")) print("Image: Binary Filtered [OK]");
+		else print("Image: Binary Filtered [Not Open]");
+		
 		// Distance Map
 		selectImage("Binary_Filtered");
 		run("Duplicate...", "duplicate title=Distance_Map");
 		run("Distance Map", "stack");
-		if (transpMode) waitForUser("[Transparent Mode] Distance Map");
+		if (transpMode) 
+		{
+			selectImage("Distance_Map");
+			waitForUser("[Transparent Mode] Distance Map");
+		}
+
+		if (isOpen("Distance_Map")) print("Image: Distance Map [OK]");
+		else print("Image: Distance Map [Not Open]");
 		
 		// Skeleton Image
 		selectImage("Binary_Filtered");
 		run("Duplicate...", "duplicate title=Skeleton");
 		run("Skeletonize", "stack");
-		if (transpMode) waitForUser("[Transparent Mode] Skeleton");
+		if (transpMode) 
+		{
+			selectImage("Skeleton");
+			waitForUser("[Transparent Mode] Skeleton");
+		}
+
+		if (isOpen("Skeleton")) print("Image: Skeleton [OK]");
+		else print("Image: Skeleton [Not Open]");
 		
 		// Skeleton Image AND Distance Map
 		imageCalculator("AND create stack", "Distance_Map","Skeleton");
 		rename("Medial_Axis_Transform");
 		close("Skeleton");
 		close("Distance_Map");
-		if (transpMode) waitForUser("[Transparent Mode] Skeleton Distance Map Union");
+		if (transpMode) 
+		{
+			selectImage("Medial_Axis_Transform");
+			waitForUser("[Transparent Mode] Skeleton Distance Map Union");
+		}
+
+		if (isOpen("Medial_Axis_Transform")) print("Image: Medial Axis Transform [OK]");
+		else print("Image: Medial Axis Transform  [Not Open]");
 		
 		selectImage("Medial_Axis_Transform");
+
+		if (transpMode) setBatchMode("hide");
 		
 		n = roiManager("Count");
 		for (i = 0; i < n; i++)
@@ -1596,8 +1629,14 @@ macro "Pomegranate"
 			
 			Roi.getContainedPoints(wcxPoints, wcyPoints);
 			distMapValues = newArray(wcxPoints.length);
-			for (j = 0; j < wcxPoints.length; j++) distMapValues[j] = getPixel(wcxPoints[j], wcyPoints[j]);
+			for (j = 0; j < wcxPoints.length; j++) 
+			{
+				pxval = getPixel(wcxPoints[j], wcyPoints[j]);
+				if (!isNaN(pxval)) distMapValues[j] = pxval;
+			}
 
+			print("\n[ " + ID + " Construction ]");
+			rSlices = 0;
 			selectImage("Canvas");
 			getVoxelSize(vx, vy, vz, nunit);
 			for (k = 1; k <= nSlices; k++)
@@ -1608,14 +1647,17 @@ macro "Pomegranate"
 					rinput = distMapValues[j];
 					zinput = (mid - k) / efactor;
 					segmentRadius = crossSectionRadius(rinput, zinput) + 1;
-					//print("Mid:" + mid + " k:" + k);
-					if ((rinput != 0) & (!isNaN(segmentRadius))) print("Cell " + i + ", Slice " + k + ", Segment " + j + ") --- R0: " + rinput + ", RS: " + segmentRadius + ", Z: " + zinput + ", Elongation Factor: " + efactor );
-					if (segmentRadius > (2 * nvx)) 
+					if ((rinput != 0) & (!isNaN(segmentRadius)))
 					{
-						// Compound Selection
-						setKeyDown("Shift");
-						makeOval(wcxPoints[j] - segmentRadius, wcyPoints[j] - segmentRadius, segmentRadius * 2, segmentRadius * 2);
+						if (segmentRadius > (2 * nvx)) 
+						{
+							// Compound Selection
+							setKeyDown("Shift");
+							makeOval(wcxPoints[j] - segmentRadius, wcyPoints[j] - segmentRadius, segmentRadius * 2, segmentRadius * 2);
+							print("Cell " + i + ", Slice " + k + ", Segment " + j + ") --- R0: " + rinput + ", RS: " + segmentRadius + ", Z: " + zinput + ", Elongation Factor: " + efactor );
+						}
 					}
+					//else if (isNaN(segmentRadius)) print("Segmentation Radius is NaN!");
 				}
 		
 				// Apply to Canvas and ROI Manager
@@ -1634,10 +1676,17 @@ macro "Pomegranate"
 					setSlice(k);
 					roiManager("Add");
 					fill();
+
+					print("Cell " + i + ", Slice " + k + " added to ROI Manager.");
+					rSlices++;
 				}
+				else print("Cell " + i + ", Slice " + k + " has no ROI.");
+				
 				run("Select None");
 				run("Remove Overlay");
 			}
+			if (rSlices != 0) print("Cell " + ID + " was constructed completely! (RS" + rSlices + ")");
+			else print("Cell " + ID + " was not constructed (RS" + rSlices + ")");
 		}
 		close("Medial_Axis_Transform");
 		selectImage("Canvas");
